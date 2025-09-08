@@ -1,0 +1,13 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  OUT_DIR:
+    sh: realpath ..
+
+tasks:
+  build:
+    cmds:
+      - echo {{.OUT_DIR}}
+      - protoc --go_out={{.OUT_DIR}} api.proto

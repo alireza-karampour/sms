@@ -1,0 +1,21 @@
+# https://taskfile.dev
+
+includes:
+  proto:
+    taskfile: ./proto/Taskfile.yml
+    dir: ./proto
+
+version: "3"
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  build:
+    deps: [proto:build]
+    cmds:
+      - go build -o bin/sms .
+  run:
+    deps: [proto:build]
+    cmds:
+      - go run .
