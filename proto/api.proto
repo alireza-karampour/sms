@@ -1,7 +1,7 @@
-edition = "2023";
+edition = "2024";
 
 package api;
 
 option go_package = "proto/api";
 
-message Hello { string Msg = 1; }
+message Hello { string msg = 1; }

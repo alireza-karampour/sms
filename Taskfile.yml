@@ -1,14 +1,13 @@
 # https://taskfile.dev
+version: "3"
 
 includes:
   proto:
     taskfile: ./proto/Taskfile.yml
     dir: ./proto
-
-version: "3"
-
-vars:
-  GREETING: Hello, World!
+  charts:
+    taskfile: ./charts/Taskfile.yml
+    dir: ./charts
 
 tasks:
   build:
