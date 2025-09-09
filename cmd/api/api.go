@@ -5,11 +5,7 @@ import (
 	"github.com/alireza-karampour/sms/internal/controllers"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
-)
-
-var (
-	Nats   *string
-	Listen *string
+	"github.com/spf13/viper"
 )
 
 var (
@@ -26,12 +22,15 @@ var ApiCmd = &cobra.Command{
 
 		UserController = controllers.NewUser(root)
 
-		return r.Run(*Listen)
+		return r.Run(viper.GetString("api.listen"))
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(ApiCmd)
-	Nats = ApiCmd.Flags().StringP("nats", "n", "127.0.0.1:4222", "nats url")
-	Listen = ApiCmd.Flags().StringP("listen", "l", "0.0.0.0:8080", "address to listen on")
+	ApiCmd.Flags().StringP("nats", "n", "127.0.0.1:4222", "nats url")
+	ApiCmd.Flags().StringP("listen", "l", "0.0.0.0:8080", "address to listen on")
+
+	viper.BindPFlag("nats", ApiCmd.Flags().Lookup("nats"))
+	viper.BindPFlag("listen", ApiCmd.Flags().Lookup("listen"))
 }

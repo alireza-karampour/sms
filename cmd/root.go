@@ -1,8 +1,11 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var ()
@@ -27,4 +30,12 @@ func Execute() {
 }
 
 func init() {
+	viper.SetConfigName("SmsGW")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.config")
+	err := viper.ReadInConfig()
+	if err != nil {
+		logrus.Errorf("viper failed to read config: %s", err)
+		os.Exit(1)
+	}
 }
