@@ -34,7 +34,7 @@ tasks:
       - kubectl port-forward pod/nats-0 4222:4222 &
   kc:pf:postgres:
     cmds:
-      - kubectl port-forward deployment/postgres 5432:5432 &
+      - kubectl port-forward deployment/postgres 5433:5432 &
   db:migrate:
     sources: [./migrations/*.sql]
     cmds:

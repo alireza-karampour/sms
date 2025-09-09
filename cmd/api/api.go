@@ -21,7 +21,7 @@ var ApiCmd = &cobra.Command{
 	Use:   "api",
 	Short: "runs the REST Api server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_, err := pgx.Connect(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d",
+		dbConn, err := pgx.Connect(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d",
 			viper.GetString("api.postgres.username"),
 			viper.GetString("api.postgres.password"),
 			viper.GetString("api.postgres.address"),
@@ -33,7 +33,7 @@ var ApiCmd = &cobra.Command{
 
 		r := gin.Default()
 		root := r.Group("/")
-		UserController = controllers.NewUser(root)
+		UserController = controllers.NewUser(root, dbConn)
 
 		return r.Run(viper.GetString("api.listen"))
 	},

@@ -21,27 +21,78 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Hello struct {
+type DeliveryStatus int32
+
+const (
+	DeliveryStatus_pending   DeliveryStatus = 0
+	DeliveryStatus_failed    DeliveryStatus = 1
+	DeliveryStatus_delivered DeliveryStatus = 2
+)
+
+// Enum value maps for DeliveryStatus.
+var (
+	DeliveryStatus_name = map[int32]string{
+		0: "pending",
+		1: "failed",
+		2: "delivered",
+	}
+	DeliveryStatus_value = map[string]int32{
+		"pending":   0,
+		"failed":    1,
+		"delivered": 2,
+	}
+)
+
+func (x DeliveryStatus) Enum() *DeliveryStatus {
+	p := new(DeliveryStatus)
+	*p = x
+	return p
+}
+
+func (x DeliveryStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DeliveryStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_enumTypes[0].Descriptor()
+}
+
+func (DeliveryStatus) Type() protoreflect.EnumType {
+	return &file_api_proto_enumTypes[0]
+}
+
+func (x DeliveryStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DeliveryStatus.Descriptor instead.
+func (DeliveryStatus) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{0}
+}
+
+type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Msg           *string                `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
+	Id            *uint64                `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Username      *string                `protobuf:"bytes,2,opt,name=username" json:"username,omitempty"`
+	Balance       *uint64                `protobuf:"varint,3,opt,name=balance" json:"balance,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Hello) Reset() {
-	*x = Hello{}
+func (x *User) Reset() {
+	*x = User{}
 	mi := &file_api_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Hello) String() string {
+func (x *User) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Hello) ProtoMessage() {}
+func (*User) ProtoMessage() {}
 
-func (x *Hello) ProtoReflect() protoreflect.Message {
+func (x *User) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -53,14 +104,172 @@ func (x *Hello) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Hello.ProtoReflect.Descriptor instead.
-func (*Hello) Descriptor() ([]byte, []int) {
+// Deprecated: Use User.ProtoReflect.Descriptor instead.
+func (*User) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Hello) GetMsg() string {
+func (x *User) GetId() uint64 {
+	if x != nil && x.Id != nil {
+		return *x.Id
+	}
+	return 0
+}
+
+func (x *User) GetUsername() string {
+	if x != nil && x.Username != nil {
+		return *x.Username
+	}
+	return ""
+}
+
+func (x *User) GetBalance() uint64 {
+	if x != nil && x.Balance != nil {
+		return *x.Balance
+	}
+	return 0
+}
+
+type Sms struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            *uint64                `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	UserId        *uint64                `protobuf:"varint,2,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+	PhoneNumberId *uint64                `protobuf:"varint,3,opt,name=phone_number_id,json=phoneNumberId" json:"phone_number_id,omitempty"`
+	Msg           *string                `protobuf:"bytes,4,opt,name=msg" json:"msg,omitempty"`
+	Status        *DeliveryStatus        `protobuf:"varint,5,opt,name=status,enum=api.DeliveryStatus" json:"status,omitempty"`
+	DeliveredAt   *uint64                `protobuf:"varint,6,opt,name=delivered_at,json=deliveredAt" json:"delivered_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Sms) Reset() {
+	*x = Sms{}
+	mi := &file_api_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Sms) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Sms) ProtoMessage() {}
+
+func (x *Sms) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Sms.ProtoReflect.Descriptor instead.
+func (*Sms) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Sms) GetId() uint64 {
+	if x != nil && x.Id != nil {
+		return *x.Id
+	}
+	return 0
+}
+
+func (x *Sms) GetUserId() uint64 {
+	if x != nil && x.UserId != nil {
+		return *x.UserId
+	}
+	return 0
+}
+
+func (x *Sms) GetPhoneNumberId() uint64 {
+	if x != nil && x.PhoneNumberId != nil {
+		return *x.PhoneNumberId
+	}
+	return 0
+}
+
+func (x *Sms) GetMsg() string {
 	if x != nil && x.Msg != nil {
 		return *x.Msg
+	}
+	return ""
+}
+
+func (x *Sms) GetStatus() DeliveryStatus {
+	if x != nil && x.Status != nil {
+		return *x.Status
+	}
+	return DeliveryStatus_pending
+}
+
+func (x *Sms) GetDeliveredAt() uint64 {
+	if x != nil && x.DeliveredAt != nil {
+		return *x.DeliveredAt
+	}
+	return 0
+}
+
+type PhoneNumber struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            *uint64                `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	UserId        *uint64                `protobuf:"varint,2,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+	Number        *string                `protobuf:"bytes,3,opt,name=number" json:"number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PhoneNumber) Reset() {
+	*x = PhoneNumber{}
+	mi := &file_api_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PhoneNumber) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PhoneNumber) ProtoMessage() {}
+
+func (x *PhoneNumber) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PhoneNumber.ProtoReflect.Descriptor instead.
+func (*PhoneNumber) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *PhoneNumber) GetId() uint64 {
+	if x != nil && x.Id != nil {
+		return *x.Id
+	}
+	return 0
+}
+
+func (x *PhoneNumber) GetUserId() uint64 {
+	if x != nil && x.UserId != nil {
+		return *x.UserId
+	}
+	return 0
+}
+
+func (x *PhoneNumber) GetNumber() string {
+	if x != nil && x.Number != nil {
+		return *x.Number
 	}
 	return ""
 }
@@ -69,9 +278,27 @@ var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
 	"\n" +
-	"\tapi.proto\x12\x03api\"\x19\n" +
-	"\x05Hello\x12\x10\n" +
-	"\x03msg\x18\x01 \x01(\tR\x03msgB\vZ\tproto/apib\beditionsp\xe8\a"
+	"\tapi.proto\x12\x03api\"L\n" +
+	"\x04User\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x18\n" +
+	"\abalance\x18\x03 \x01(\x04R\abalance\"\xb8\x01\n" +
+	"\x03Sms\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12&\n" +
+	"\x0fphone_number_id\x18\x03 \x01(\x04R\rphoneNumberId\x12\x10\n" +
+	"\x03msg\x18\x04 \x01(\tR\x03msg\x12+\n" +
+	"\x06status\x18\x05 \x01(\x0e2\x13.api.DeliveryStatusR\x06status\x12!\n" +
+	"\fdelivered_at\x18\x06 \x01(\x04R\vdeliveredAt\"N\n" +
+	"\vPhoneNumber\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x16\n" +
+	"\x06number\x18\x03 \x01(\tR\x06number*8\n" +
+	"\x0eDeliveryStatus\x12\v\n" +
+	"\apending\x10\x00\x12\n" +
+	"\n" +
+	"\x06failed\x10\x01\x12\r\n" +
+	"\tdelivered\x10\x02B\vZ\tproto/apib\beditionsp\xe8\a"
 
 var (
 	file_api_proto_rawDescOnce sync.Once
@@ -85,16 +312,21 @@ func file_api_proto_rawDescGZIP() []byte {
 	return file_api_proto_rawDescData
 }
 
-var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_api_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_api_proto_goTypes = []any{
-	(*Hello)(nil), // 0: api.Hello
+	(DeliveryStatus)(0), // 0: api.DeliveryStatus
+	(*User)(nil),        // 1: api.User
+	(*Sms)(nil),         // 2: api.Sms
+	(*PhoneNumber)(nil), // 3: api.PhoneNumber
 }
 var file_api_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: api.Sms.status:type_name -> api.DeliveryStatus
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_init() }
@@ -107,13 +339,14 @@ func file_api_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   1,
+			NumEnums:      1,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_api_proto_goTypes,
 		DependencyIndexes: file_api_proto_depIdxs,
+		EnumInfos:         file_api_proto_enumTypes,
 		MessageInfos:      file_api_proto_msgTypes,
 	}.Build()
 	File_api_proto = out.File

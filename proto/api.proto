@@ -4,4 +4,29 @@ package api;
 
 option go_package = "proto/api";
 
-message Hello { string msg = 1; }
+enum DeliveryStatus {
+  pending = 0;
+  failed = 1;
+  delivered = 2;
+}
+
+message User {
+  uint64 id = 1;
+  string username = 2;
+  uint64 balance = 3;
+}
+
+message Sms {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  uint64 phone_number_id = 3;
+  string msg = 4;
+  DeliveryStatus status = 5;
+  uint64 delivered_at = 6;
+}
+
+message PhoneNumber {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  string number = 3;
+}
