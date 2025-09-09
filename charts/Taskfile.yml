@@ -6,6 +6,10 @@ tasks:
   nats:
     cmds:
       - helm install nats nats
+  postgres:
+    cmds:
+      - helm install postgres postgres
   clean:
     cmds:
       - helm uninstall nats
+      - helm uninstall postgres
