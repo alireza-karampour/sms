@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    pass VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS wallets (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users (id),
+    balance DECIMAL(10, 2) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS phone_numbers (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users (id),
+    phone_number VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS sms (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users (id),
+    phone_number_id INT NOT NULL REFERENCES phone_numbers (id),
+    message VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

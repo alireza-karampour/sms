@@ -1,6 +1,9 @@
 # https://taskfile.dev
 version: "3"
 
+vars:
+  POSTGRES_USER: root
+
 includes:
   proto:
     taskfile: ./proto/Taskfile.yml
@@ -32,3 +35,8 @@ tasks:
   kc:pf:postgres:
     cmds:
       - kubectl port-forward deployment/postgres 5432:5432 &
+  db:migrate:
+    sources: [./migrations/*.sql]
+    cmds:
+      - for: sources
+        cmd: psql -U {{.POSTGRES_USER}} -h localhost -f {{.ITEM}}
