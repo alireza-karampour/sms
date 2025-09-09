@@ -17,4 +17,16 @@ tasks:
   run:
     deps: [proto:build]
     cmds:
-      - go run .
+      - task: kc:pf:nats
+      - defer: pkill kubectl
+      - go run . --nats "127.0.0.1:4222"
+  mk:start:
+    cmds:
+      - minikube start
+  mk:init:
+    cmds:
+      - minikube start --nodes 3 --listen-address 0.0.0.0
+  kc:pf:nats:
+    cmds:
+      - printf "nats service at %s\n" {{.ADD}}
+      - kubectl port-forward pod/nats-0 4222:4222 &

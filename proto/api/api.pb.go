@@ -23,7 +23,7 @@ const (
 
 type Hello struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Msg           *string                `protobuf:"bytes,1,opt,name=Msg" json:"Msg,omitempty"`
+	Msg           *string                `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -71,7 +71,7 @@ const file_api_proto_rawDesc = "" +
 	"\n" +
 	"\tapi.proto\x12\x03api\"\x19\n" +
 	"\x05Hello\x12\x10\n" +
-	"\x03Msg\x18\x01 \x01(\tR\x03MsgB\vZ\tproto/apib\beditionsp\xe8\a"
+	"\x03msg\x18\x01 \x01(\tR\x03msgB\vZ\tproto/apib\beditionsp\xe8\a"
 
 var (
 	file_api_proto_rawDescOnce sync.Once
