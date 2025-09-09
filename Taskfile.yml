@@ -8,7 +8,6 @@ includes:
   charts:
     taskfile: ./charts/Taskfile.yml
     dir: ./charts
-
 tasks:
   build:
     deps: [proto:build]

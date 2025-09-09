@@ -3,10 +3,16 @@
 version: "3"
 
 tasks:
+  install:
+    cmds:
+      - task: nats
+      - task: postgres
   nats:
+    ignore_error: true
     cmds:
       - helm install nats nats
   postgres:
+    ignore_error: true
     cmds:
       - helm install postgres postgres
   clean:
