@@ -19,7 +19,7 @@ tasks:
     cmds:
       - task: kc:pf:nats
       - defer: pkill kubectl
-      - go run . --nats "127.0.0.1:4222"
+      - go run . api -l "127.0.0.1:8080"
   mk:start:
     cmds:
       - minikube start
