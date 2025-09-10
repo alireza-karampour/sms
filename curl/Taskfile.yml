@@ -3,10 +3,18 @@ version: "3"
 
 vars:
   ADDRESS: http://localhost:8080
-  NEW_USER:
-    sh: cat ./new_user.json
 
 tasks:
-  create:user:
+  user:create:
+    vars:
+      NEW_USER:
+        sh: cat ./new_user.json
     cmds:
-      - curl -X POST -L --json '{{.NEW_USER}}' {{.ADDRESS}}/user
+      - curl -X POST -L --stderr /dev/null --json '{{.NEW_USER}}' {{.ADDRESS}}/user | jq
+  user:addBalance:
+    cmds:
+      - curl -X PUT -L --stderr /dev/null --json '
+        {
+        "username":"{{.USERNAME}}",
+        "balance":"{{.BALANCE}}"
+        }' {{.ADDRESS}}/user/balance
