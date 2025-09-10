@@ -274,6 +274,58 @@ func (x *PhoneNumber) GetNumber() string {
 	return ""
 }
 
+type AddPhoneNumberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      *string                `protobuf:"bytes,1,opt,name=username" json:"username,omitempty"`
+	PhoneNumber   *string                `protobuf:"bytes,2,opt,name=phone_number,json=phoneNumber" json:"phone_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddPhoneNumberRequest) Reset() {
+	*x = AddPhoneNumberRequest{}
+	mi := &file_api_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddPhoneNumberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddPhoneNumberRequest) ProtoMessage() {}
+
+func (x *AddPhoneNumberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddPhoneNumberRequest.ProtoReflect.Descriptor instead.
+func (*AddPhoneNumberRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AddPhoneNumberRequest) GetUsername() string {
+	if x != nil && x.Username != nil {
+		return *x.Username
+	}
+	return ""
+}
+
+func (x *AddPhoneNumberRequest) GetPhoneNumber() string {
+	if x != nil && x.PhoneNumber != nil {
+		return *x.PhoneNumber
+	}
+	return ""
+}
+
 var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
@@ -293,7 +345,10 @@ const file_api_proto_rawDesc = "" +
 	"\vPhoneNumber\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x16\n" +
-	"\x06number\x18\x03 \x01(\tR\x06number*8\n" +
+	"\x06number\x18\x03 \x01(\tR\x06number\"V\n" +
+	"\x15AddPhoneNumberRequest\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12!\n" +
+	"\fphone_number\x18\x02 \x01(\tR\vphoneNumber*8\n" +
 	"\x0eDeliveryStatus\x12\v\n" +
 	"\apending\x10\x00\x12\n" +
 	"\n" +
@@ -313,12 +368,13 @@ func file_api_proto_rawDescGZIP() []byte {
 }
 
 var file_api_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_api_proto_goTypes = []any{
-	(DeliveryStatus)(0), // 0: api.DeliveryStatus
-	(*User)(nil),        // 1: api.User
-	(*Sms)(nil),         // 2: api.Sms
-	(*PhoneNumber)(nil), // 3: api.PhoneNumber
+	(DeliveryStatus)(0),           // 0: api.DeliveryStatus
+	(*User)(nil),                  // 1: api.User
+	(*Sms)(nil),                   // 2: api.Sms
+	(*PhoneNumber)(nil),           // 3: api.PhoneNumber
+	(*AddPhoneNumberRequest)(nil), // 4: api.AddPhoneNumberRequest
 }
 var file_api_proto_depIdxs = []int32{
 	0, // 0: api.Sms.status:type_name -> api.DeliveryStatus
@@ -340,7 +396,7 @@ func file_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

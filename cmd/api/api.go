@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	UserController *controllers.User
+	UserController        *controllers.User
+	PhoneNumberController *controllers.PhoneNumber
 )
 
 // ApiCmd represents the api command
@@ -34,6 +35,7 @@ var ApiCmd = &cobra.Command{
 		r := gin.Default()
 		root := r.Group("/")
 		UserController = controllers.NewUser(root, dbConn)
+		PhoneNumberController = controllers.NewPhoneNumber(root, dbConn)
 
 		return r.Run(viper.GetString("api.listen"))
 	},

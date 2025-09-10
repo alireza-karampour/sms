@@ -18,3 +18,22 @@ tasks:
         "username":"{{.USERNAME}}",
         "balance":{{.BALANCE}}
         }' {{.ADDRESS}}/user/balance | jq
+
+  phone:create:
+    vars:
+      NEW_PHONE:
+        sh: cat ./new_phone.json
+    cmds:
+      - curl -X POST -L --stderr /dev/null --json '{{.NEW_PHONE}}' {{.ADDRESS}}/phone-number |jq
+
+  phone:get:
+    cmds:
+      - curl -X GET -L --stderr /dev/null {{.ADDRESS}}/phone-number/{{.PHONE_ID}} | jq
+
+  phone:delete:
+    cmds:
+      - curl -X DELETE -L --stderr /dev/null {{.ADDRESS}}/phone-number/{{.PHONE_ID}} | jq
+
+  phone:getByUser:
+    cmds:
+      - curl -X GET -L --stderr /dev/null {{.ADDRESS}}/phone-number/user/{{.USERNAME}} | jq

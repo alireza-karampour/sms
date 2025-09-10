@@ -30,3 +30,8 @@ message PhoneNumber {
   uint64 user_id = 2;
   string number = 3;
 }
+
+message AddPhoneNumberRequest {
+  string username = 1;
+  string phone_number = 2;
+}
