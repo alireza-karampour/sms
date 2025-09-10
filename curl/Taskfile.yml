@@ -16,5 +16,5 @@ tasks:
       - curl -X PUT -L --stderr /dev/null --json '
         {
         "username":"{{.USERNAME}}",
-        "balance":"{{.BALANCE}}"
-        }' {{.ADDRESS}}/user/balance
+        "balance":{{.BALANCE}}
+        }' {{.ADDRESS}}/user/balance | jq

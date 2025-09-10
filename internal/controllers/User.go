@@ -88,16 +88,21 @@ func (u *User) AddBalance(ctx *gin.Context) {
 		return
 	}
 	rows, err := u.db.Query(ctx, "AddBalance", user.Balance, user.Username)
-	defer rows.Close()
 	newBalance := 0
 	if rows.Next() {
-		err := rows.Scan(&newBalance)
+		err = rows.Scan(&newBalance)
 		if err != nil {
 			ctx.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		ctx.AbortWithError(500, err)
+		return
+	}
 	ctx.JSON(200, map[string]any{
+		"status":      200,
 		"new_balance": newBalance,
 	})
 	return
