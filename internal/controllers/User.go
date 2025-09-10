@@ -53,6 +53,6 @@ func (u *User) CreateNewUser(ctx *gin.Context) {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	ctx.Status(200)
+	ctx.String(200, "OK")
 	return
 }

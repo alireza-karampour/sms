@@ -37,6 +37,7 @@ tasks:
       - kubectl port-forward deployment/postgres 5433:5432 &
   db:migrate:
     sources: [./migrations/*.sql]
+    generates: [mock]
     cmds:
       - for: sources
         cmd: psql -U {{.POSTGRES_USER}} -h localhost -f {{.ITEM}}
