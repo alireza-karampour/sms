@@ -43,7 +43,7 @@ func NewSimpleConsumer(nc *nats.Conn) (*SimpleConsumer, error) {
 	return sc, nil
 }
 
-func (sc *SimpleConsumer) BindConsumers(ctx context.Context, streams ...StreamConsumersConfig) error {
+func (sc *SimpleConsumer) BindConsumers(ctx context.Context, streams ...*StreamConsumersConfig) error {
 	for _, conf := range streams {
 		strName := conf.Stream.Name
 		err := sc.BindStreams(ctx, conf.Stream)

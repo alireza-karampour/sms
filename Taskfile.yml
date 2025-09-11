@@ -23,6 +23,12 @@ tasks:
       - task: kc:pf:postgres
       - defer: pkill kubectl
       - go run . api
+  run:worker:
+    deps: [proto:build]
+    cmds:
+      - task: kc:pf:nats
+      - defer: pkill kubectl
+      - go run . worker
   mk:start:
     cmds:
       - minikube start
