@@ -15,7 +15,7 @@ import (
 type Sms struct {
 	*Base
 	db   *pgx.Conn
-	sp   *mynats.SimplePublisher
+	sp   *mynats.Publisher
 	cost uint64
 }
 

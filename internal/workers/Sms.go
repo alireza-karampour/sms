@@ -7,8 +7,13 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
+const (
+	EXPRESS_SMS_CONSUMER_NAME string = "SmsExpress"
+	NORMAL_SMS_CONSUMER_NAME  string = "Sms"
+)
+
 type Sms struct {
-	*nats.SimpleConsumer
+	*nats.Consumer
 }
 
 func NewSms(ctx context.Context, natsAddress string) (*Sms, error) {
@@ -23,7 +28,7 @@ func NewSms(ctx context.Context, natsAddress string) (*Sms, error) {
 	}
 
 	worker := &Sms{
-		SimpleConsumer: sc,
+		Consumer: sc,
 	}
 
 	err = worker.bindConsumer(ctx)
@@ -37,7 +42,7 @@ func NewSms(ctx context.Context, natsAddress string) (*Sms, error) {
 func (s *Sms) bindConsumer(ctx context.Context) error {
 	normalSms := &nats.StreamConsumersConfig{
 		Stream: jetstream.StreamConfig{
-			Name:        "Sms",
+			Name:        NORMAL_SMS_CONSUMER_NAME,
 			Description: "work queue for handling sms with normal priority",
 			Subjects: []string{
 				"sms.send.request",
@@ -49,15 +54,15 @@ func (s *Sms) bindConsumer(ctx context.Context) error {
 		},
 		Consumers: []jetstream.ConsumerConfig{
 			{
-				Name:        "SmsConsumer",
-				Durable:     "SmsConsumer",
+				Name:        NORMAL_SMS_CONSUMER_NAME,
+				Durable:     NORMAL_SMS_CONSUMER_NAME,
 				Description: "consumes normal sms work queue",
 			},
 		},
 	}
 	expressSms := &nats.StreamConsumersConfig{
 		Stream: jetstream.StreamConfig{
-			Name:        "SmsExpress",
+			Name:        EXPRESS_SMS_CONSUMER_NAME,
 			Description: "work queue for handling sms with high priority",
 			Subjects: []string{
 				"sms.ex.send.request",
@@ -69,11 +74,18 @@ func (s *Sms) bindConsumer(ctx context.Context) error {
 		},
 		Consumers: []jetstream.ConsumerConfig{
 			{
-				Name:        "SmsExpressConsumer",
-				Durable:     "SmsExpressConsumer",
+				Name:        EXPRESS_SMS_CONSUMER_NAME,
+				Durable:     EXPRESS_SMS_CONSUMER_NAME,
 				Description: "consumes high priority sms work queue",
 			},
 		},
 	}
 	return s.BindConsumers(ctx, normalSms, expressSms)
+}
+
+func (s *Sms) Start() error {
+	// for strName, cons := range s.Consumers {
+	//
+	// }
+	return nil
 }

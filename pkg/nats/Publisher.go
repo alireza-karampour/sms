@@ -10,22 +10,22 @@ import (
 type StreamName = string
 type Subject = string
 
-type SimplePublisher struct {
+type Publisher struct {
 	*Base
 }
 
-func NewSimplePublisher(nc *nats.Conn) (*SimplePublisher, error) {
+func NewSimplePublisher(nc *nats.Conn) (*Publisher, error) {
 	b, err := NewBase(nc)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SimplePublisher{
+	return &Publisher{
 		Base: b,
 	}, nil
 }
 
-func (sp *SimplePublisher) BindStreams(ctx context.Context, streams ...jetstream.StreamConfig) error {
+func (sp *Publisher) BindStreams(ctx context.Context, streams ...jetstream.StreamConfig) error {
 	for _, str := range streams {
 		jss, err := sp.CreateOrUpdateStream(ctx, str)
 		if err != nil {

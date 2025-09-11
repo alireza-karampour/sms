@@ -25,25 +25,25 @@ func (s *StreamConsumers) AddConsumer(consumer jetstream.Consumer) {
 	s.Consumers = append(s.Consumers, consumer)
 }
 
-type SimpleConsumer struct {
+type Consumer struct {
 	*Base
 	Consumers map[string]*StreamConsumers
 }
 
-func NewSimpleConsumer(nc *nats.Conn) (*SimpleConsumer, error) {
+func NewSimpleConsumer(nc *nats.Conn) (*Consumer, error) {
 	b, err := NewBase(nc)
 	if err != nil {
 		return nil, err
 	}
 
-	sc := &SimpleConsumer{
+	sc := &Consumer{
 		Base:      b,
 		Consumers: make(map[string]*StreamConsumers),
 	}
 	return sc, nil
 }
 
-func (sc *SimpleConsumer) BindConsumers(ctx context.Context, streams ...*StreamConsumersConfig) error {
+func (sc *Consumer) BindConsumers(ctx context.Context, streams ...*StreamConsumersConfig) error {
 	for _, conf := range streams {
 		strName := conf.Stream.Name
 		err := sc.BindStreams(ctx, conf.Stream)
