@@ -7,6 +7,7 @@ import (
 
 	. "github.com/alireza-karampour/sms/cmd"
 	"github.com/alireza-karampour/sms/internal/workers"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -22,12 +23,22 @@ var WorkerCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer cancel()
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.SetFormatter(&logrus.TextFormatter{
+			ForceColors:            true,
+			DisableLevelTruncation: true,
+		})
 
 		natsAddress := viper.GetString("worker.nats.address")
 		Worker, err = workers.NewSms(ctx, natsAddress)
 		if err != nil {
 			return err
 		}
+		err = Worker.Start(ctx)
+		if err != nil {
+			return err
+		}
+
 		<-ctx.Done()
 		return nil
 	},

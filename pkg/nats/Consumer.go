@@ -28,41 +28,56 @@ func (s *StreamConsumers) AddConsumer(consumer jetstream.Consumer) {
 type Consumer struct {
 	*Base
 	Consumers map[string]*StreamConsumers
+	ctxs      []jetstream.ConsumeContext
 }
 
-func NewSimpleConsumer(nc *nats.Conn) (*Consumer, error) {
+func NewConsumer(nc *nats.Conn) (*Consumer, error) {
 	b, err := NewBase(nc)
 	if err != nil {
 		return nil, err
 	}
 
-	sc := &Consumer{
+	c := &Consumer{
 		Base:      b,
 		Consumers: make(map[string]*StreamConsumers),
+		ctxs:      make([]jetstream.ConsumeContext, 0, 1),
 	}
-	return sc, nil
+	return c, nil
 }
 
-func (sc *Consumer) BindConsumers(ctx context.Context, streams ...*StreamConsumersConfig) error {
+func (c *Consumer) BindConsumers(ctx context.Context, streams ...*StreamConsumersConfig) error {
 	for _, conf := range streams {
 		strName := conf.Stream.Name
-		err := sc.BindStreams(ctx, conf.Stream)
+		err := c.BindStreams(ctx, conf.Stream)
 		if err != nil {
 			return err
 		}
 
 		for _, consumerConf := range conf.Consumers {
-			cons, err := sc.CreateOrUpdateConsumer(ctx, strName, consumerConf)
+			cons, err := c.CreateOrUpdateConsumer(ctx, strName, consumerConf)
 			if err != nil {
 				return err
 			}
-			consumers, ok := sc.Consumers[strName]
+			consumers, ok := c.Consumers[strName]
 			if !ok {
-				sc.Consumers[strName] = new(StreamConsumers)
-				consumers = sc.Consumers[strName]
+				c.Consumers[strName] = new(StreamConsumers)
+				consumers = c.Consumers[strName]
 			}
-			consumers.Stream = sc.Streams[strName]
+			consumers.Stream = c.Streams[strName]
 			consumers.AddConsumer(cons)
+		}
+	}
+	return nil
+}
+
+func (c *Consumer) StartConsumers(ctx context.Context, consumeHandler func(msg jetstream.Msg), opts ...jetstream.PullConsumeOpt) error {
+	for _, consumers := range c.Consumers {
+		for _, consumer := range consumers.Consumers {
+			ctx, err := consumer.Consume(consumeHandler, opts...)
+			if err != nil {
+				return err
+			}
+			c.ctxs = append(c.ctxs, ctx)
 		}
 	}
 	return nil
