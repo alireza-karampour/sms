@@ -2,14 +2,12 @@ package controllers
 
 import (
 	"errors"
-	"net/http"
-	"sync"
-
 	"github.com/alireza-karampour/sms/pkg/middlewares"
 	. "github.com/alireza-karampour/sms/pkg/utils"
 	"github.com/alireza-karampour/sms/proto/api"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"net/http"
 )
 
 var (
@@ -19,10 +17,10 @@ var (
 
 type PhoneNumber struct {
 	*Base
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewPhoneNumber(parent *gin.RouterGroup, db *pgx.Conn) *PhoneNumber {
+func NewPhoneNumber(parent *gin.RouterGroup, db *pgxpool.Pool) *PhoneNumber {
 	base := NewBase("/phone-number", parent, middlewares.WriteErrorBody)
 	pn := &PhoneNumber{
 		base,
@@ -40,27 +38,14 @@ func NewPhoneNumber(parent *gin.RouterGroup, db *pgx.Conn) *PhoneNumber {
 }
 
 func (pn *PhoneNumber) CreatePhoneNumber(ctx *gin.Context) {
-	err := sync.OnceValue(func() error {
-		_, err := pn.db.Prepare(ctx, "CreatePhoneNumber", `INSERT INTO phone_numbers (user_id, phone_number) VALUES ((SELECT id FROM users WHERE username = $1), $2);`)
-		if err != nil {
-			return err
-		}
-		return nil
-	})()
-
-	if err != nil {
-		ctx.AbortWithError(500, err)
-		return
-	}
-
 	request := &api.AddPhoneNumberRequest{}
-	err = ctx.BindJSON(request)
+	err := ctx.BindJSON(request)
 	if err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	rows, err := pn.db.Query(ctx, "CreatePhoneNumber", request.Username, request.PhoneNumber)
+	rows, err := pn.db.Query(ctx, `INSERT INTO phone_numbers (user_id, phone_number) VALUES ((SELECT id FROM users WHERE username = $1), $2);`, request.Username, request.PhoneNumber)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -85,21 +70,8 @@ func (pn *PhoneNumber) CreatePhoneNumber(ctx *gin.Context) {
 }
 
 func (pn *PhoneNumber) GetPhoneNumber(ctx *gin.Context) {
-	err := sync.OnceValue(func() error {
-		_, err := pn.db.Prepare(ctx, "GetPhoneNumber", `SELECT id, user_id, phone_number FROM phone_numbers WHERE id = $1;`)
-		if err != nil {
-			return err
-		}
-		return nil
-	})()
-
-	if err != nil {
-		ctx.AbortWithError(500, err)
-		return
-	}
-
 	id := ctx.Param("id")
-	rows, err := pn.db.Query(ctx, "GetPhoneNumber", id)
+	rows, err := pn.db.Query(ctx, `SELECT id, user_id, phone_number FROM phone_numbers WHERE id = $1;`, id)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -126,21 +98,8 @@ func (pn *PhoneNumber) GetPhoneNumber(ctx *gin.Context) {
 }
 
 func (pn *PhoneNumber) DeletePhoneNumber(ctx *gin.Context) {
-	err := sync.OnceValue(func() error {
-		_, err := pn.db.Prepare(ctx, "DeletePhoneNumber", `DELETE FROM phone_numbers WHERE id = $1 RETURNING id;`)
-		if err != nil {
-			return err
-		}
-		return nil
-	})()
-
-	if err != nil {
-		ctx.AbortWithError(500, err)
-		return
-	}
-
 	id := ctx.Param("id")
-	rows, err := pn.db.Query(ctx, "DeletePhoneNumber", id)
+	rows, err := pn.db.Query(ctx, `DELETE FROM phone_numbers WHERE id = $1 RETURNING id;`, id)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -163,21 +122,8 @@ func (pn *PhoneNumber) DeletePhoneNumber(ctx *gin.Context) {
 }
 
 func (pn *PhoneNumber) GetPhoneNumbersByUser(ctx *gin.Context) {
-	err := sync.OnceValue(func() error {
-		_, err := pn.db.Prepare(ctx, "GetPhoneNumbersByUser", `SELECT pn.id, pn.user_id, pn.phone_number FROM phone_numbers pn JOIN users u ON pn.user_id = u.id WHERE u.username = $1;`)
-		if err != nil {
-			return err
-		}
-		return nil
-	})()
-
-	if err != nil {
-		ctx.AbortWithError(500, err)
-		return
-	}
-
 	username := ctx.Param("username")
-	rows, err := pn.db.Query(ctx, "GetPhoneNumbersByUser", username)
+	rows, err := pn.db.Query(ctx, `SELECT pn.id, pn.user_id, pn.phone_number FROM phone_numbers pn JOIN users u ON pn.user_id = u.id WHERE u.username = $1;`, username)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return

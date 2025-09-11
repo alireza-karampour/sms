@@ -3,24 +3,12 @@ package workers
 import (
 	"context"
 
+	. "github.com/alireza-karampour/sms/internal/streams"
+	. "github.com/alireza-karampour/sms/internal/subjects"
 	"github.com/alireza-karampour/sms/pkg/nats"
 	. "github.com/alireza-karampour/sms/pkg/utils"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	EXPRESS_SMS_CONSUMER_NAME string = "SmsExpress"
-	NORMAL_SMS_CONSUMER_NAME  string = "Sms"
-)
-
-const (
-	SMS  = "sms"
-	SEND = "send"
-	REQ  = "request"
-	STAT = "status"
-	ERR  = "error"
-	EX   = "ex"
 )
 
 type Sms struct {

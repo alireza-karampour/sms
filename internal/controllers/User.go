@@ -2,14 +2,12 @@ package controllers
 
 import (
 	"errors"
-	"net/http"
-	"sync"
-
 	"github.com/alireza-karampour/sms/pkg/middlewares"
 	. "github.com/alireza-karampour/sms/pkg/utils"
 	"github.com/alireza-karampour/sms/proto/api"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"net/http"
 )
 
 var (
@@ -18,10 +16,10 @@ var (
 
 type User struct {
 	*Base
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewUser(parent *gin.RouterGroup, db *pgx.Conn) *User {
+func NewUser(parent *gin.RouterGroup, db *pgxpool.Pool) *User {
 	base := NewBase("/user", parent, middlewares.WriteErrorBody)
 	user := &User{
 		base,
@@ -37,25 +35,13 @@ func NewUser(parent *gin.RouterGroup, db *pgx.Conn) *User {
 }
 
 func (u *User) CreateNewUser(ctx *gin.Context) {
-	err := sync.OnceValue(func() error {
-		_, err := u.db.Prepare(ctx, "CreateUser", `INSERT INTO users (username, balance) VALUES ($1, $2);`)
-		if err != nil {
-			return err
-		}
-		return nil
-	})()
-
-	if err != nil {
-		ctx.AbortWithError(500, err)
-		return
-	}
 	user := &api.User{}
-	err = ctx.BindJSON(user)
+	err := ctx.BindJSON(user)
 	if err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	rows, err := u.db.Query(ctx, "CreateUser", user.Username, 0)
+	rows, err := u.db.Query(ctx, `INSERT INTO users (username, balance) VALUES ($1, $2);`, user.Username, 0)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -74,20 +60,13 @@ func (u *User) CreateNewUser(ctx *gin.Context) {
 }
 
 func (u *User) AddBalance(ctx *gin.Context) {
-	err := sync.OnceValue(func() error {
-		_, err := u.db.Prepare(ctx, "AddBalance", `UPDATE users SET balance = balance + $1 WHERE username = $2 RETURNING balance;`)
-		if err != nil {
-			return err
-		}
-		return nil
-	})()
 	user := &api.User{}
-	err = ctx.BindJSON(user)
+	err := ctx.BindJSON(user)
 	if err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	rows, err := u.db.Query(ctx, "AddBalance", user.Balance, user.Username)
+	rows, err := u.db.Query(ctx, `UPDATE users SET balance = balance + $1 WHERE username = $2 RETURNING balance;`, user.Balance, user.Username)
 	newBalance := 0
 	if rows.Next() {
 		err = rows.Scan(&newBalance)

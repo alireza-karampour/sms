@@ -3,10 +3,13 @@ package controllers
 import (
 	"context"
 
+	. "github.com/alireza-karampour/sms/internal/streams"
+	. "github.com/alireza-karampour/sms/internal/subjects"
 	"github.com/alireza-karampour/sms/pkg/middlewares"
 	mynats "github.com/alireza-karampour/sms/pkg/nats"
+	. "github.com/alireza-karampour/sms/pkg/utils"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/spf13/viper"
@@ -14,12 +17,12 @@ import (
 
 type Sms struct {
 	*Base
-	db   *pgx.Conn
+	db   *pgxpool.Pool
 	sp   *mynats.Publisher
 	cost uint64
 }
 
-func NewSms(parent *gin.RouterGroup, db *pgx.Conn, nc *nats.Conn) (*Sms, error) {
+func NewSms(parent *gin.RouterGroup, db *pgxpool.Pool, nc *nats.Conn) (*Sms, error) {
 	base := NewBase("/sms", parent, middlewares.WriteErrorBody)
 	sp, err := mynats.NewSimplePublisher(nc)
 	if err != nil {
@@ -35,23 +38,23 @@ func NewSms(parent *gin.RouterGroup, db *pgx.Conn, nc *nats.Conn) (*Sms, error) 
 
 	err = sp.BindStreams(context.Background(),
 		jetstream.StreamConfig{
-			Name:        "Sms",
+			Name:        NORMAL_SMS_CONSUMER_NAME,
 			Description: "work queue for handling sms with normal priority",
 			Subjects: []string{
-				"sms.send.request",
-				"sms.send.status",
-				"sms.send.error",
+				MakeSubject(SMS, SEND, REQ),
+				MakeSubject(SMS, SEND, STAT),
+				MakeSubject(SMS, SEND, ERR),
 			},
 			Retention: jetstream.WorkQueuePolicy,
 			Storage:   jetstream.FileStorage,
 		},
 		jetstream.StreamConfig{
-			Name:        "SmsExpress",
+			Name:        EXPRESS_SMS_CONSUMER_NAME,
 			Description: "work queue for handling sms with high priority",
 			Subjects: []string{
-				"sms.ex.send.request",
-				"sms.ex.send.status",
-				"sms.ex.send.error",
+				MakeSubject(SMS, EX, SEND, REQ),
+				MakeSubject(SMS, EX, SEND, STAT),
+				MakeSubject(SMS, EX, SEND, ERR),
 			},
 			Retention: jetstream.WorkQueuePolicy,
 			Storage:   jetstream.FileStorage,
