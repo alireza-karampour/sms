@@ -6,6 +6,7 @@ import (
 
 	. "github.com/alireza-karampour/sms/cmd"
 	"github.com/alireza-karampour/sms/internal/controllers"
+	"github.com/alireza-karampour/sms/pkg/nats"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ import (
 var (
 	UserController        *controllers.User
 	PhoneNumberController *controllers.PhoneNumber
+	SmsController         *controllers.Sms
 )
 
 // ApiCmd represents the api command
@@ -31,11 +33,19 @@ var ApiCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		natsConn, err := nats.Connect(viper.GetString("api.nats.address"))
+		if err != nil {
+			return err
+		}
 
 		r := gin.Default()
 		root := r.Group("/")
 		UserController = controllers.NewUser(root, dbConn)
 		PhoneNumberController = controllers.NewPhoneNumber(root, dbConn)
+		SmsController, err = controllers.NewSms(root, dbConn, natsConn)
+		if err != nil {
+			return err
+		}
 
 		return r.Run(viper.GetString("api.listen"))
 	},
@@ -43,9 +53,6 @@ var ApiCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(ApiCmd)
-	ApiCmd.Flags().StringP("nats", "n", "127.0.0.1:4222", "nats url")
-	ApiCmd.Flags().StringP("listen", "l", "0.0.0.0:8080", "address to listen on")
 
-	viper.BindPFlag("nats", ApiCmd.Flags().Lookup("nats"))
-	viper.BindPFlag("listen", ApiCmd.Flags().Lookup("listen"))
+	viper.SetDefault("api.sms.cost", 5)
 }

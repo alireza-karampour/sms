@@ -17,11 +17,15 @@ type SimplePublisher struct {
 	Streams map[StreamName]jetstream.Stream
 }
 
-func Connect(addr string) (*SimplePublisher, error) {
+func Connect(addr string) (*nats.Conn, error) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://%s", addr))
 	if err != nil {
 		return nil, err
 	}
+	return nc, nil
+}
+
+func NewSimplePublisher(nc *nats.Conn) (*SimplePublisher, error) {
 	jsi, err := jetstream.New(nc)
 	if err != nil {
 		return nil, err

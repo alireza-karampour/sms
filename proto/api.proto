@@ -9,6 +9,10 @@ enum DeliveryStatus {
   failed = 1;
   delivered = 2;
 }
+enum SmsPriority {
+  normal = 0;
+  high = 1;
+}
 
 message User {
   uint64 id = 1;
@@ -23,6 +27,7 @@ message Sms {
   string msg = 4;
   DeliveryStatus status = 5;
   uint64 delivered_at = 6;
+  SmsPriority priority = 7;
 }
 
 message PhoneNumber {

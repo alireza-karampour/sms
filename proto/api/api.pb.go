@@ -70,6 +70,52 @@ func (DeliveryStatus) EnumDescriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{0}
 }
 
+type SmsPriority int32
+
+const (
+	SmsPriority_normal SmsPriority = 0
+	SmsPriority_high   SmsPriority = 1
+)
+
+// Enum value maps for SmsPriority.
+var (
+	SmsPriority_name = map[int32]string{
+		0: "normal",
+		1: "high",
+	}
+	SmsPriority_value = map[string]int32{
+		"normal": 0,
+		"high":   1,
+	}
+)
+
+func (x SmsPriority) Enum() *SmsPriority {
+	p := new(SmsPriority)
+	*p = x
+	return p
+}
+
+func (x SmsPriority) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SmsPriority) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_enumTypes[1].Descriptor()
+}
+
+func (SmsPriority) Type() protoreflect.EnumType {
+	return &file_api_proto_enumTypes[1]
+}
+
+func (x SmsPriority) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SmsPriority.Descriptor instead.
+func (SmsPriority) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{1}
+}
+
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *uint64                `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
@@ -138,6 +184,7 @@ type Sms struct {
 	Msg           *string                `protobuf:"bytes,4,opt,name=msg" json:"msg,omitempty"`
 	Status        *DeliveryStatus        `protobuf:"varint,5,opt,name=status,enum=api.DeliveryStatus" json:"status,omitempty"`
 	DeliveredAt   *uint64                `protobuf:"varint,6,opt,name=delivered_at,json=deliveredAt" json:"delivered_at,omitempty"`
+	Priority      *SmsPriority           `protobuf:"varint,7,opt,name=priority,enum=api.SmsPriority" json:"priority,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -212,6 +259,13 @@ func (x *Sms) GetDeliveredAt() uint64 {
 		return *x.DeliveredAt
 	}
 	return 0
+}
+
+func (x *Sms) GetPriority() SmsPriority {
+	if x != nil && x.Priority != nil {
+		return *x.Priority
+	}
+	return SmsPriority_normal
 }
 
 type PhoneNumber struct {
@@ -334,14 +388,15 @@ const file_api_proto_rawDesc = "" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x18\n" +
-	"\abalance\x18\x03 \x01(\x04R\abalance\"\xb8\x01\n" +
+	"\abalance\x18\x03 \x01(\x04R\abalance\"\xe6\x01\n" +
 	"\x03Sms\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12&\n" +
 	"\x0fphone_number_id\x18\x03 \x01(\x04R\rphoneNumberId\x12\x10\n" +
 	"\x03msg\x18\x04 \x01(\tR\x03msg\x12+\n" +
 	"\x06status\x18\x05 \x01(\x0e2\x13.api.DeliveryStatusR\x06status\x12!\n" +
-	"\fdelivered_at\x18\x06 \x01(\x04R\vdeliveredAt\"N\n" +
+	"\fdelivered_at\x18\x06 \x01(\x04R\vdeliveredAt\x12,\n" +
+	"\bpriority\x18\a \x01(\x0e2\x10.api.SmsPriorityR\bpriority\"N\n" +
 	"\vPhoneNumber\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x16\n" +
@@ -353,7 +408,11 @@ const file_api_proto_rawDesc = "" +
 	"\apending\x10\x00\x12\n" +
 	"\n" +
 	"\x06failed\x10\x01\x12\r\n" +
-	"\tdelivered\x10\x02B\vZ\tproto/apib\beditionsp\xe8\a"
+	"\tdelivered\x10\x02*#\n" +
+	"\vSmsPriority\x12\n" +
+	"\n" +
+	"\x06normal\x10\x00\x12\b\n" +
+	"\x04high\x10\x01B\vZ\tproto/apib\beditionsp\xe8\a"
 
 var (
 	file_api_proto_rawDescOnce sync.Once
@@ -367,22 +426,24 @@ func file_api_proto_rawDescGZIP() []byte {
 	return file_api_proto_rawDescData
 }
 
-var file_api_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_api_proto_goTypes = []any{
 	(DeliveryStatus)(0),           // 0: api.DeliveryStatus
-	(*User)(nil),                  // 1: api.User
-	(*Sms)(nil),                   // 2: api.Sms
-	(*PhoneNumber)(nil),           // 3: api.PhoneNumber
-	(*AddPhoneNumberRequest)(nil), // 4: api.AddPhoneNumberRequest
+	(SmsPriority)(0),              // 1: api.SmsPriority
+	(*User)(nil),                  // 2: api.User
+	(*Sms)(nil),                   // 3: api.Sms
+	(*PhoneNumber)(nil),           // 4: api.PhoneNumber
+	(*AddPhoneNumberRequest)(nil), // 5: api.AddPhoneNumberRequest
 }
 var file_api_proto_depIdxs = []int32{
 	0, // 0: api.Sms.status:type_name -> api.DeliveryStatus
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 1: api.Sms.priority:type_name -> api.SmsPriority
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_init() }
@@ -395,7 +456,7 @@ func file_api_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
