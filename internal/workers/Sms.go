@@ -97,11 +97,36 @@ func (s *Sms) Start(ctx context.Context) error {
 }
 
 func (s *Sms) handler(msg jetstream.Msg) {
-	logrus.Debugf("Subject: %s\n", msg.Subject())
-	logrus.Debugf("ConsumerMsg: %s\n", string(msg.Data()))
-	err := msg.DoubleAck(context.Background())
-	if err != nil {
-		logrus.Errorf("ACK Failed: %s", err)
+	sub := Subject(msg.Subject())
+	switch {
+	case sub.Filter(SMS, SEND, ANY):
+		s.handleNormalSms(msg)
+	case sub.Filter(SMS, EX, ANY, ANY):
+		s.handleExpressSms(msg)
+	}
+}
+
+func (s *Sms) handleNormalSms(msg jetstream.Msg) {
+	defer msg.DoubleAck(context.Background())
+
+	var sub Subject = Subject(msg.Subject())
+	switch {
+	case sub.Filter(ANY, ANY, REQ):
+		logrus.Debugf("NORMAL Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
+	case sub.Filter(ANY, ANY, STAT):
+		logrus.Debugf("NORMAL Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
+	}
+}
+
+func (s *Sms) handleExpressSms(msg jetstream.Msg) {
+	defer msg.DoubleAck(context.Background())
+
+	var sub Subject = Subject(msg.Subject())
+	switch {
+	case sub.Filter(ANY, ANY, ANY, REQ):
+		logrus.Debugf("EXPRESS Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
+	case sub.Filter(ANY, ANY, ANY, STAT):
+		logrus.Debugf("EXPRESS Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
 	}
 }
 

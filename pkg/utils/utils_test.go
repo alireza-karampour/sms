@@ -12,17 +12,17 @@ var _ = Describe("Utils", func() {
 	Context("HasSubject", func() {
 		It("should handle * correctly", func() {
 			msgSubject := Subject("sms.send.request")
-			res := msgSubject.HasSubject(SMS, "*", REQ)
+			res := msgSubject.Filter(SMS, "*", REQ)
 			Expect(res).To(BeTrue())
 		})
 		It("should fail", func() {
 			msgSubject := Subject("sms.send.request")
-			res := msgSubject.HasSubject(SMS, EX, SEND, REQ)
+			res := msgSubject.Filter(SMS, EX, SEND, REQ)
 			Expect(res).To(BeFalse())
 		})
 		It("should fail", func() {
 			msgSubject := Subject("sms.send.request")
-			res := msgSubject.HasSubject(SMS, EX, REQ)
+			res := msgSubject.Filter(SMS, EX, REQ)
 			Expect(res).To(BeFalse())
 		})
 	})

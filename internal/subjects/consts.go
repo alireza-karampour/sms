@@ -7,4 +7,5 @@ const (
 	STAT = "status"
 	ERR  = "error"
 	EX   = "ex"
+	ANY  = "*"
 )

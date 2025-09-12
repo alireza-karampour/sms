@@ -12,7 +12,7 @@ func MakeSubject(s ...string) string {
 	return strings.Join(s, ".")
 }
 
-func (s Subject) HasSubject(subs ...string) bool {
+func (s Subject) Filter(subs ...string) bool {
 	parts := strings.Split(string(s), ".")
 	if len(parts) != len(subs) {
 		return false
