@@ -39,6 +39,10 @@ var WorkerCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		err = pool.Ping(context.Background())
+		if err != nil {
+			return err
+		}
 
 		natsAddress := viper.GetString("worker.nats.address")
 		Worker, err = workers.NewSms(ctx, natsAddress, pool)

@@ -73,6 +73,29 @@ func (q *Queries) AddPhoneNumberByUsername(ctx context.Context, arg AddPhoneNumb
 	return err
 }
 
+const addSms = `-- name: AddSms :exec
+INSERT INTO sms (user_id,phone_number_id,to_phone_number,status,message) VALUES ($1, $2, $3, $4, $5)
+`
+
+type AddSmsParams struct {
+	UserID        int32  `db:"user_id" json:"user_id"`
+	PhoneNumberID int32  `db:"phone_number_id" json:"phone_number_id"`
+	ToPhoneNumber string `db:"to_phone_number" json:"to_phone_number"`
+	Status        string `db:"status" json:"status"`
+	Message       string `db:"message" json:"message"`
+}
+
+func (q *Queries) AddSms(ctx context.Context, arg AddSmsParams) error {
+	_, err := q.db.Exec(ctx, addSms,
+		arg.UserID,
+		arg.PhoneNumberID,
+		arg.ToPhoneNumber,
+		arg.Status,
+		arg.Message,
+	)
+	return err
+}
+
 const addUser = `-- name: AddUser :exec
 INSERT INTO users (username, balance) VALUES ($1, $2)
 `

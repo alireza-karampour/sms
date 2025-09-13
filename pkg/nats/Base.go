@@ -18,7 +18,6 @@ func NewBase(nc *nats.Conn) (*Base, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &Base{
 		Conn:      nc,
 		JetStream: jsi,

@@ -33,6 +33,11 @@ var ApiCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		err = pool.Ping(context.Background())
+		if err != nil {
+			return err
+		}
+
 		natsConn, err := nats.Connect(viper.GetString("api.nats.address"))
 		if err != nil {
 			return err

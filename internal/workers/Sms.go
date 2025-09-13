@@ -2,11 +2,14 @@ package workers
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	. "github.com/alireza-karampour/sms/internal/streams"
 	. "github.com/alireza-karampour/sms/internal/subjects"
 	"github.com/alireza-karampour/sms/pkg/nats"
 	. "github.com/alireza-karampour/sms/pkg/utils"
+	"github.com/alireza-karampour/sms/sqlc"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/sirupsen/logrus"
@@ -14,7 +17,8 @@ import (
 
 type Sms struct {
 	*nats.Consumer
-	*pgxpool.Pool
+	*sqlc.Queries
+	db *pgxpool.Pool
 }
 
 func NewSms(ctx context.Context, natsAddress string, pool *pgxpool.Pool) (*Sms, error) {
@@ -30,7 +34,8 @@ func NewSms(ctx context.Context, natsAddress string, pool *pgxpool.Pool) (*Sms, 
 
 	worker := &Sms{
 		Consumer: sc,
-		Pool:     pool,
+		Queries:  sqlc.New(pool),
+		db:       pool,
 	}
 
 	err = worker.bindConsumer(ctx)
@@ -114,14 +119,53 @@ func (s *Sms) handleNormalSms(msg jetstream.Msg) {
 	switch {
 	case sub.Filter(ANY, ANY, REQ):
 		logrus.Debugf("Msg: %s\n", string(msg.Data()))
+		sms := new(sqlc.Sm)
+		err := json.Unmarshal(msg.Data(), sms)
+		if err != nil {
+			msg.TermWithReason(err.Error())
+			return
+		}
+
+		tx, err := s.db.Begin(context.Background())
+		if err != nil {
+			logrus.Errorf("failed to begin tx: %s\n", err.Error())
+			err := msg.NakWithDelay(time.Second)
+			if err != nil {
+				logrus.Errorf("failed to NAK: %s\n", err.Error())
+			}
+			return
+		}
+		defer tx.Rollback(context.Background())
+		q := s.WithTx(tx)
+		err = q.AddSms(context.Background(), sqlc.AddSmsParams{
+			UserID:        sms.UserID,
+			PhoneNumberID: sms.PhoneNumberID,
+			ToPhoneNumber: sms.ToPhoneNumber,
+			Status:        sms.Status,
+			Message:       sms.Message,
+		})
+		if err != nil {
+			logrus.Errorf("failed to add sms: %s\n", err.Error())
+			err = msg.NakWithDelay(time.Second)
+			if err != nil {
+				logrus.Errorf("failed to NAK msg: %s\n", err.Error())
+			}
+			return
+		}
+		err = msg.DoubleAck(context.Background())
+		if err != nil {
+			logrus.Errorf("failed to DoubleAck: %s", err.Error())
+			return
+		}
+		tx.Commit(context.Background())
+
 	case sub.Filter(ANY, ANY, STAT):
 		logrus.Debugf("NORMAL Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
-	}
-
-	err := msg.DoubleAck(context.Background())
-	if err != nil {
-		logrus.Errorf("failed to DoubleAck: %s", err)
-		return
+		err := msg.DoubleAck(context.Background())
+		if err != nil {
+			logrus.Errorf("failed to DoubleAck: %s", err)
+			return
+		}
 	}
 
 }

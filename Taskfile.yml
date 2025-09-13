@@ -21,6 +21,7 @@ tasks:
   run:worker:
     cmds:
       - task: kc:pf:nats
+      - task: kc:pf:postgres
       - defer: pkill kubectl
       - go run . worker
   mk:start:

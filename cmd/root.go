@@ -38,4 +38,5 @@ func init() {
 		logrus.Errorf("viper failed to read config: %s", err)
 		os.Exit(1)
 	}
+	logrus.Info("config file read")
 }

@@ -18,6 +18,7 @@ type Sm struct {
 	ID            int32            `db:"id" json:"id"`
 	UserID        int32            `db:"user_id" json:"user_id"`
 	PhoneNumberID int32            `db:"phone_number_id" json:"phone_number_id"`
+	ToPhoneNumber string           `db:"to_phone_number" json:"to_phone_number"`
 	Message       string           `db:"message" json:"message"`
 	Status        string           `db:"status" json:"status"`
 	DeliveredAt   pgtype.Timestamp `db:"delivered_at" json:"delivered_at"`
