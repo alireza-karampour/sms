@@ -2,12 +2,12 @@ package controllers
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/alireza-karampour/sms/pkg/middlewares"
-	. "github.com/alireza-karampour/sms/pkg/utils"
-	"github.com/alireza-karampour/sms/proto/api"
+	"github.com/alireza-karampour/sms/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"net/http"
 )
 
 var (
@@ -16,14 +16,14 @@ var (
 
 type User struct {
 	*Base
-	db *pgxpool.Pool
+	db *sqlc.Queries
 }
 
 func NewUser(parent *gin.RouterGroup, db *pgxpool.Pool) *User {
 	base := NewBase("/user", parent, middlewares.WriteErrorBody)
 	user := &User{
 		base,
-		db,
+		sqlc.New(db),
 	}
 
 	base.RegisterRoutes(func(gp *gin.RouterGroup) {
@@ -35,51 +35,42 @@ func NewUser(parent *gin.RouterGroup, db *pgxpool.Pool) *User {
 }
 
 func (u *User) CreateNewUser(ctx *gin.Context) {
-	user := &api.User{}
+	user := new(sqlc.User)
 	err := ctx.BindJSON(user)
 	if err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	rows, err := u.db.Query(ctx, `INSERT INTO users (username, balance) VALUES ($1, $2);`, user.Username, 0)
+	err = u.db.AddUser(ctx, sqlc.AddUserParams{
+		Username: user.Username,
+		Balance:  user.Balance,
+	})
 	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		ctx.AbortWithError(500, err)
 		return
 	}
-	rows.Close()
-	if err = rows.Err(); err != nil {
-		if ErrContains(err, "duplicate key value") {
-			ctx.AbortWithError(http.StatusConflict, ErrUserAlreadyExists)
-			return
-		}
-		ctx.AbortWithError(http.StatusInternalServerError, rows.Err())
-		return
-	}
+
 	ctx.String(200, "OK")
 	return
 }
 
 func (u *User) AddBalance(ctx *gin.Context) {
-	user := &api.User{}
+	user := new(sqlc.User)
 	err := ctx.BindJSON(user)
 	if err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	rows, err := u.db.Query(ctx, `UPDATE users SET balance = balance + $1 WHERE username = $2 RETURNING balance;`, user.Balance, user.Username)
-	newBalance := 0
-	if rows.Next() {
-		err = rows.Scan(&newBalance)
-		if err != nil {
-			ctx.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-	}
-	rows.Close()
-	if err = rows.Err(); err != nil {
-		ctx.AbortWithError(500, err)
+
+	newBalance, err := u.db.AddBalance(ctx, sqlc.AddBalanceParams{
+		Balance:  user.Balance,
+		Username: user.Username,
+	})
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
 	ctx.JSON(200, map[string]any{
 		"status":      200,
 		"new_balance": newBalance,

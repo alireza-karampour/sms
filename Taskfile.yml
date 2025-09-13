@@ -5,26 +5,20 @@ vars:
   POSTGRES_USER: root
 
 includes:
-  proto:
-    taskfile: ./proto/Taskfile.yml
-    dir: ./proto
   charts:
     taskfile: ./charts/Taskfile.yml
     dir: ./charts
 tasks:
   build:
-    deps: [proto:build]
     cmds:
       - go build -o bin/sms .
   run:
-    deps: [proto:build]
     cmds:
       - task: kc:pf:nats
       - task: kc:pf:postgres
       - defer: pkill kubectl
       - go run . api
   run:worker:
-    deps: [proto:build]
     cmds:
       - task: kc:pf:nats
       - defer: pkill kubectl
@@ -41,9 +35,12 @@ tasks:
   kc:pf:postgres:
     cmds:
       - kubectl port-forward deployment/postgres 5433:5432 &
-  db:migrate:
-    sources: [./migrations/*.sql]
-    generates: [mock]
+  db:init:
     cmds:
-      - for: sources
-        cmd: psql -U {{.POSTGRES_USER}} -h localhost -f {{.ITEM}}
+      - psql -U {{.POSTGRES_USER}} -h localhost -f ./schema.sql
+  db:clear:
+    cmds:
+      - psql -U {{.POSTGRES_USER}} -h localhost -c 'DROP SCHEMA public CASCADE'
+  sqlc:gen:
+    cmds:
+      - sqlc generate

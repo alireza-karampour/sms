@@ -7,15 +7,17 @@ import (
 	. "github.com/alireza-karampour/sms/internal/subjects"
 	"github.com/alireza-karampour/sms/pkg/nats"
 	. "github.com/alireza-karampour/sms/pkg/utils"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/sirupsen/logrus"
 )
 
 type Sms struct {
 	*nats.Consumer
+	*pgxpool.Pool
 }
 
-func NewSms(ctx context.Context, natsAddress string) (*Sms, error) {
+func NewSms(ctx context.Context, natsAddress string, pool *pgxpool.Pool) (*Sms, error) {
 	nc, err := nats.Connect(natsAddress)
 	if err != nil {
 		return nil, err
@@ -28,6 +30,7 @@ func NewSms(ctx context.Context, natsAddress string) (*Sms, error) {
 
 	worker := &Sms{
 		Consumer: sc,
+		Pool:     pool,
 	}
 
 	err = worker.bindConsumer(ctx)
@@ -107,15 +110,20 @@ func (s *Sms) handler(msg jetstream.Msg) {
 }
 
 func (s *Sms) handleNormalSms(msg jetstream.Msg) {
-	defer msg.DoubleAck(context.Background())
-
 	var sub Subject = Subject(msg.Subject())
 	switch {
 	case sub.Filter(ANY, ANY, REQ):
-		logrus.Debugf("NORMAL Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
+		logrus.Debugf("Msg: %s\n", string(msg.Data()))
 	case sub.Filter(ANY, ANY, STAT):
 		logrus.Debugf("NORMAL Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
 	}
+
+	err := msg.DoubleAck(context.Background())
+	if err != nil {
+		logrus.Errorf("failed to DoubleAck: %s", err)
+		return
+	}
+
 }
 
 func (s *Sms) handleExpressSms(msg jetstream.Msg) {

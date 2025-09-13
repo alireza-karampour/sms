@@ -2,11 +2,13 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 
 	. "github.com/alireza-karampour/sms/cmd"
 	"github.com/alireza-karampour/sms/internal/workers"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -28,9 +30,18 @@ var WorkerCmd = &cobra.Command{
 			ForceColors:            true,
 			DisableLevelTruncation: true,
 		})
+		pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d",
+			viper.GetString("worker.postgres.username"),
+			viper.GetString("worker.postgres.password"),
+			viper.GetString("worker.postgres.address"),
+			viper.GetInt("worker.postgres.port"),
+		))
+		if err != nil {
+			return err
+		}
 
 		natsAddress := viper.GetString("worker.nats.address")
-		Worker, err = workers.NewSms(ctx, natsAddress)
+		Worker, err = workers.NewSms(ctx, natsAddress, pool)
 		if err != nil {
 			return err
 		}
