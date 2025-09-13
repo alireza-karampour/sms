@@ -40,3 +40,7 @@ WHERE
     username = $2
 RETURNING
     balance;
+
+-- name: GetUserId :one
+SELECT id FROM users u WHERE u.username = $1;
+

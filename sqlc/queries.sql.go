@@ -12,7 +12,13 @@ import (
 )
 
 const addBalance = `-- name: AddBalance :one
-UPDATE users SET balance = balance + $1 WHERE username = $2 RETURNING balance
+UPDATE users
+SET
+    balance = balance + $1
+WHERE
+    username = $2
+RETURNING
+    balance
 `
 
 type AddBalanceParams struct {
@@ -28,13 +34,9 @@ func (q *Queries) AddBalance(ctx context.Context, arg AddBalanceParams) (pgtype.
 }
 
 const addPhoneNumber = `-- name: AddPhoneNumber :exec
-INSERT INTO phone_numbers(
-  user_id,
-  phone_number
-)VALUES(
-$1,
-$2
-)
+INSERT INTO
+    phone_numbers (user_id, phone_number)
+VALUES ($1, $2)
 `
 
 type AddPhoneNumberParams struct {
@@ -48,8 +50,17 @@ func (q *Queries) AddPhoneNumber(ctx context.Context, arg AddPhoneNumberParams) 
 }
 
 const addPhoneNumberByUsername = `-- name: AddPhoneNumberByUsername :exec
-INSERT INTO phone_numbers (user_id, phone_number) 
-VALUES ((SELECT id FROM users WHERE username = $1), $2)
+INSERT INTO
+    phone_numbers (user_id, phone_number)
+VALUES (
+        (
+            SELECT id
+            FROM users
+            WHERE
+                username = $1
+        ),
+        $2
+    )
 `
 
 type AddPhoneNumberByUsernameParams struct {
@@ -63,12 +74,7 @@ func (q *Queries) AddPhoneNumberByUsername(ctx context.Context, arg AddPhoneNumb
 }
 
 const addUser = `-- name: AddUser :exec
-INSERT INTO users(
-username,
-balance
-)VALUES(
-$1,
-$2)
+INSERT INTO users (username, balance) VALUES ($1, $2)
 `
 
 type AddUserParams struct {
@@ -103,10 +109,11 @@ func (q *Queries) GetPhoneNumber(ctx context.Context, id int32) (PhoneNumber, er
 }
 
 const getPhoneNumbersByUsername = `-- name: GetPhoneNumbersByUsername :many
-SELECT pn.id, pn.user_id, pn.phone_number 
-FROM phone_numbers pn 
-JOIN users u ON pn.user_id = u.id 
-WHERE u.username = $1
+SELECT pn.id, pn.user_id, pn.phone_number
+FROM phone_numbers pn
+    JOIN users u ON pn.user_id = u.id
+WHERE
+    u.username = $1
 `
 
 func (q *Queries) GetPhoneNumbersByUsername(ctx context.Context, username string) ([]PhoneNumber, error) {
@@ -127,4 +134,15 @@ func (q *Queries) GetPhoneNumbersByUsername(ctx context.Context, username string
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUserId = `-- name: GetUserId :one
+SELECT id FROM users u WHERE u.username = $1
+`
+
+func (q *Queries) GetUserId(ctx context.Context, username string) (int32, error) {
+	row := q.db.QueryRow(ctx, getUserId, username)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }

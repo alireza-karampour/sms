@@ -27,6 +27,7 @@ func NewUser(parent *gin.RouterGroup, db *pgxpool.Pool) *User {
 	}
 
 	base.RegisterRoutes(func(gp *gin.RouterGroup) {
+		gp.GET("/:username", user.GetUserId)
 		gp.POST("", user.CreateNewUser)
 		gp.PUT("/balance", user.AddBalance)
 	})
@@ -50,7 +51,9 @@ func (u *User) CreateNewUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.String(200, "OK")
+	ctx.JSON(200, gin.H{
+		"msg": "OK",
+	})
 	return
 }
 
@@ -76,4 +79,21 @@ func (u *User) AddBalance(ctx *gin.Context) {
 		"new_balance": newBalance,
 	})
 	return
+}
+
+func (u *User) GetUserId(ctx *gin.Context) {
+	username := ctx.Param("username")
+	if username == "" {
+		ctx.AbortWithError(400, errors.New("username can't be empty"))
+		return
+	}
+	id, err := u.db.GetUserId(ctx, username)
+	if err != nil {
+		ctx.AbortWithError(500, err)
+		return
+	}
+	ctx.JSON(200, gin.H{
+		"id": id,
+	})
+
 }

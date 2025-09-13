@@ -21,8 +21,10 @@ tasks:
 
   phone:create:
     vars:
+      USER_ID:
+        sh: curl -X GET -L --stderr /dev/null {{.ADDRESS}}/user/{{.USERNAME}} | jq '.id'
       NEW_PHONE:
-        sh: cat ./new_phone.json
+        sh: cat ./new_phone.json | jq --argjson id {{.USER_ID}} '.user_id = $id'
     cmds:
       - curl -X POST -L --stderr /dev/null --json '{{.NEW_PHONE}}' {{.ADDRESS}}/phone-number |jq
 
