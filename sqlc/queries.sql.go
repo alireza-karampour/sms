@@ -169,3 +169,19 @@ func (q *Queries) GetUserId(ctx context.Context, username string) (int32, error)
 	err := row.Scan(&id)
 	return id, err
 }
+
+const subBalance = `-- name: SubBalance :one
+UPDATE users SET balance = balance - $1 WHERE id = $2 RETURNING balance
+`
+
+type SubBalanceParams struct {
+	Amount pgtype.Numeric `db:"amount" json:"amount"`
+	UserID int32          `db:"user_id" json:"user_id"`
+}
+
+func (q *Queries) SubBalance(ctx context.Context, arg SubBalanceParams) (pgtype.Numeric, error) {
+	row := q.db.QueryRow(ctx, subBalance, arg.Amount, arg.UserID)
+	var balance pgtype.Numeric
+	err := row.Scan(&balance)
+	return balance, err
+}

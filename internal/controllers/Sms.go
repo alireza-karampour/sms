@@ -8,6 +8,7 @@ import (
 	"github.com/alireza-karampour/sms/pkg/middlewares"
 	mynats "github.com/alireza-karampour/sms/pkg/nats"
 	. "github.com/alireza-karampour/sms/pkg/utils"
+	"github.com/alireza-karampour/sms/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go"
@@ -72,4 +73,16 @@ func NewSms(parent *gin.RouterGroup, db *pgxpool.Pool, nc *nats.Conn) (*Sms, err
 }
 
 func (s *Sms) SendSms(ctx *gin.Context) {
+	query := new(struct {
+		Express bool `json:"express"`
+	})
+
+	ctx.BindQuery(query)
+	sms := new(sqlc.Sm)
+	err := ctx.BindJSON(sms)
+	if err != nil {
+		ctx.AbortWithError(400, err)
+		return
+	}
+
 }

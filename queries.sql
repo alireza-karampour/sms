@@ -47,4 +47,7 @@ SELECT id FROM users u WHERE u.username = $1;
 -- name: AddSms :exec
 INSERT INTO sms (user_id,phone_number_id,to_phone_number,status,message) VALUES ($1, $2, $3, $4, $5);
 
+-- name: SubBalance :one
+UPDATE users SET balance = balance - @amount WHERE id = @user_id RETURNING balance;
+
 

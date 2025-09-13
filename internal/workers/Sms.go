@@ -10,10 +10,23 @@ import (
 	"github.com/alireza-karampour/sms/pkg/nats"
 	. "github.com/alireza-karampour/sms/pkg/utils"
 	"github.com/alireza-karampour/sms/sqlc"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
+
+var (
+	cost pgtype.Numeric
+)
+
+func init() {
+	err := cost.Scan(viper.GetString("sms.cost"))
+	if err != nil {
+		panic(err)
+	}
+}
 
 type Sms struct {
 	*nats.Consumer
@@ -152,6 +165,21 @@ func (s *Sms) handleNormalSms(msg jetstream.Msg) {
 			}
 			return
 		}
+		newBalance, err := q.SubBalance(context.Background(), sqlc.SubBalanceParams{
+			Amount: cost,
+			UserID: sms.UserID,
+		})
+		if err != nil {
+			logrus.Errorf("failed to subtract balance: %s\n", err.Error())
+			err = msg.NakWithDelay(time.Second)
+			if err != nil {
+				logrus.Errorf("failed to NAK msg: %s\n", err.Error())
+			}
+			return
+		}
+
+		logrus.Debugf("UserID: %d NewBalance: %d\n", sms.UserID, newBalance.Int.Int64())
+
 		err = msg.DoubleAck(context.Background())
 		if err != nil {
 			logrus.Errorf("failed to DoubleAck: %s", err.Error())
@@ -171,14 +199,57 @@ func (s *Sms) handleNormalSms(msg jetstream.Msg) {
 }
 
 func (s *Sms) handleExpressSms(msg jetstream.Msg) {
-	defer msg.DoubleAck(context.Background())
-
 	var sub Subject = Subject(msg.Subject())
 	switch {
 	case sub.Filter(ANY, ANY, ANY, REQ):
 		logrus.Debugf("EXPRESS Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
+		sms := new(sqlc.Sm)
+		err := json.Unmarshal(msg.Data(), sms)
+		if err != nil {
+			msg.TermWithReason(err.Error())
+			return
+		}
+
+		tx, err := s.db.Begin(context.Background())
+		if err != nil {
+			logrus.Errorf("failed to begin tx: %s\n", err.Error())
+			err := msg.NakWithDelay(time.Second)
+			if err != nil {
+				logrus.Errorf("failed to NAK: %s\n", err.Error())
+			}
+			return
+		}
+		defer tx.Rollback(context.Background())
+		q := s.WithTx(tx)
+		err = q.AddSms(context.Background(), sqlc.AddSmsParams{
+			UserID:        sms.UserID,
+			PhoneNumberID: sms.PhoneNumberID,
+			ToPhoneNumber: sms.ToPhoneNumber,
+			Status:        sms.Status,
+			Message:       sms.Message,
+		})
+		if err != nil {
+			logrus.Errorf("failed to add sms: %s\n", err.Error())
+			err = msg.NakWithDelay(time.Second)
+			if err != nil {
+				logrus.Errorf("failed to NAK msg: %s\n", err.Error())
+			}
+			return
+		}
+		err = msg.DoubleAck(context.Background())
+		if err != nil {
+			logrus.Errorf("failed to DoubleAck: %s", err.Error())
+			return
+		}
+		tx.Commit(context.Background())
+
 	case sub.Filter(ANY, ANY, ANY, STAT):
 		logrus.Debugf("EXPRESS Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
+		err := msg.DoubleAck(context.Background())
+		if err != nil {
+			logrus.Errorf("failed to DoubleAck: %s", err)
+			return
+		}
 	}
 }
 
