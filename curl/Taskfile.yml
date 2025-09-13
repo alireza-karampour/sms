@@ -48,3 +48,15 @@ tasks:
         sh: cat ./new_sms.json | jq '.user_id = {{.USER_ID}}' | jq '.phone_number_id = {{.PHONE_ID}}'
     cmds:
       - nats pub 'sms.send.request' '{{.SMS}}'
+  sms:send:
+    vars:
+      NUMBER: "+989382181893"
+      USER: "havok"
+      PHONE_ID:
+        sh: psql -t -U root -h localhost -c "SELECT row_to_json(t) FROM (SELECT * FROM phone_numbers WHERE phone_number = '{{.NUMBER}}') t" | jq '.id'
+      USER_ID:
+        sh: psql -t -U root -h localhost -c "SELECT row_to_json(t) FROM (SELECT * FROM users WHERE username = '{{.USER}}') t" | jq '.id'
+      SMS:
+        sh: cat ./new_sms.json | jq '.user_id = {{.USER_ID}}' | jq '.phone_number_id = {{.PHONE_ID}}'
+    cmds:
+      - curl -X POST -L --stderr /dev/null --json '{{.SMS}}' {{.ADDRESS}}/sms?express=false | jq

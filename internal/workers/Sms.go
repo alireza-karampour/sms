@@ -177,8 +177,12 @@ func (s *Sms) handleNormalSms(msg jetstream.Msg) {
 			}
 			return
 		}
-
-		logrus.Debugf("UserID: %d NewBalance: %d\n", sms.UserID, newBalance.Int.Int64())
+		num, err := newBalance.Float64Value()
+		if err != nil {
+			logrus.Error("failed to convert balance to float64")
+		} else {
+			logrus.Debugf("UserID: %d NewBalance: %f\n", sms.UserID, num.Float64)
+		}
 
 		err = msg.DoubleAck(context.Background())
 		if err != nil {
@@ -236,6 +240,27 @@ func (s *Sms) handleExpressSms(msg jetstream.Msg) {
 			}
 			return
 		}
+
+		newBalance, err := q.SubBalance(context.Background(), sqlc.SubBalanceParams{
+			Amount: cost,
+			UserID: sms.UserID,
+		})
+
+		if err != nil {
+			logrus.Errorf("failed to subtract balance: %s\n", err.Error())
+			err = msg.NakWithDelay(time.Second)
+			if err != nil {
+				logrus.Errorf("failed to NAK msg: %s\n", err.Error())
+			}
+			return
+		}
+		num, err := newBalance.Float64Value()
+		if err != nil {
+			logrus.Error("failed to convert balance to float64")
+		} else {
+			logrus.Debugf("UserID: %d NewBalance: %f\n", sms.UserID, num.Float64)
+		}
+
 		err = msg.DoubleAck(context.Background())
 		if err != nil {
 			logrus.Errorf("failed to DoubleAck: %s", err.Error())

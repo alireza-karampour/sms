@@ -120,6 +120,17 @@ func (q *Queries) DeletePhoneNumber(ctx context.Context, id int32) (int32, error
 	return id, err
 }
 
+const getBalance = `-- name: GetBalance :one
+SELECT balance FROM users WHERE id = $1
+`
+
+func (q *Queries) GetBalance(ctx context.Context, userID int32) (pgtype.Numeric, error) {
+	row := q.db.QueryRow(ctx, getBalance, userID)
+	var balance pgtype.Numeric
+	err := row.Scan(&balance)
+	return balance, err
+}
+
 const getPhoneNumber = `-- name: GetPhoneNumber :one
 SELECT id, user_id, phone_number FROM phone_numbers WHERE id = $1
 `

@@ -50,4 +50,7 @@ INSERT INTO sms (user_id,phone_number_id,to_phone_number,status,message) VALUES 
 -- name: SubBalance :one
 UPDATE users SET balance = balance - @amount WHERE id = @user_id RETURNING balance;
 
+-- name: GetBalance :one
+SELECT balance FROM users WHERE id = @user_id;
+
 
