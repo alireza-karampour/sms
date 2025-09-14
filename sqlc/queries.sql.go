@@ -131,6 +131,47 @@ func (q *Queries) GetBalance(ctx context.Context, userID int32) (pgtype.Numeric,
 	return balance, err
 }
 
+const getLastSmsMessages = `-- name: GetLastSmsMessages :many
+SELECT id, user_id, phone_number_id, to_phone_number, message, status, delivered_at
+FROM sms 
+WHERE user_id = $1 
+ORDER BY delivered_at DESC 
+LIMIT $2
+`
+
+type GetLastSmsMessagesParams struct {
+	UserID int32 `db:"user_id" json:"user_id"`
+	Limit  int32 `db:"limit" json:"limit"`
+}
+
+func (q *Queries) GetLastSmsMessages(ctx context.Context, arg GetLastSmsMessagesParams) ([]Sm, error) {
+	rows, err := q.db.Query(ctx, getLastSmsMessages, arg.UserID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Sm
+	for rows.Next() {
+		var i Sm
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.PhoneNumberID,
+			&i.ToPhoneNumber,
+			&i.Message,
+			&i.Status,
+			&i.DeliveredAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPhoneNumber = `-- name: GetPhoneNumber :one
 SELECT id, user_id, phone_number FROM phone_numbers WHERE id = $1
 `

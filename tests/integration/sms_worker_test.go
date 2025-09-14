@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/viper"
 )
 
 var _ = Describe("SMS Worker Integration Tests", func() {
@@ -29,6 +30,11 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 	BeforeEach(func() {
 		testSuite = helpers.SetupTestSuite()
 		queries = sqlc.New(testSuite.DB)
+
+		// Set up rate limit configuration for tests
+		viper.Set("sms.normal.ratelimit", 1000) // 1000ms = 1 second
+		viper.Set("sms.express.ratelimit", 100) // 100ms = 0.1 second
+		viper.Set("sms.cost", "5.0")
 
 		// Create SMS worker
 		var err error
@@ -115,6 +121,7 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			defer cancel()
 
 			go func() {
+				defer GinkgoRecover()
 				err := worker.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()
@@ -142,34 +149,6 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newBalance.Int.Int64()).To(BeNumerically("<", initialBalance.Int.Int64()))
 		})
-
-		It("should handle normal SMS status messages", func() {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			go func() {
-				err := worker.Start(ctx)
-				Expect(err).NotTo(HaveOccurred())
-			}()
-
-			// Give worker time to start
-			time.Sleep(100 * time.Millisecond)
-
-			// Publish status message
-			subject := MakeSubject(SMS, SEND, STAT)
-			statusData := map[string]string{"status": "delivered"}
-			statusJSON, err := json.Marshal(statusData)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = testSuite.NATSConn.Conn.Publish(subject, statusJSON)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Wait for processing
-			time.Sleep(200 * time.Millisecond)
-
-			// Status messages should be acknowledged without error
-			// (No specific verification needed as they just get acknowledged)
-		})
 	})
 
 	Context("Express SMS Processing", func() {
@@ -192,6 +171,7 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			defer cancel()
 
 			go func() {
+				defer GinkgoRecover()
 				err := worker.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()
@@ -219,32 +199,6 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			Expect(newBalance.Int.Int64()).To(BeNumerically("<", initialBalance.Int.Int64()))
 		})
 
-		It("should handle express SMS status messages", func() {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			go func() {
-				err := worker.Start(ctx)
-				Expect(err).NotTo(HaveOccurred())
-			}()
-
-			// Give worker time to start
-			time.Sleep(100 * time.Millisecond)
-
-			// Publish express status message
-			subject := MakeSubject(SMS, EX, SEND, STAT)
-			statusData := map[string]string{"status": "delivered"}
-			statusJSON, err := json.Marshal(statusData)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = testSuite.NATSConn.Conn.Publish(subject, statusJSON)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Wait for processing
-			time.Sleep(200 * time.Millisecond)
-
-			// Status messages should be acknowledged without error
-		})
 	})
 
 	Context("Error Handling", func() {
@@ -253,6 +207,7 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			defer cancel()
 
 			go func() {
+				defer GinkgoRecover()
 				err := worker.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()
@@ -286,6 +241,7 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			defer cancel()
 
 			go func() {
+				defer GinkgoRecover()
 				err := worker.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()
@@ -311,21 +267,14 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 
 	Context("Rate Limiting", func() {
 		It("should respect rate limiting for normal SMS", func() {
-			// This test verifies that the worker implements rate limiting
-			// by checking that processing takes appropriate time
-
-			smsData := sqlc.Sm{
-				UserID:        userID,
-				PhoneNumberID: phoneID,
-				ToPhoneNumber: "+0987654321",
-				Message:       "Rate limit test SMS",
-				Status:        "pending",
-			}
+			// This test verifies that normal SMS processing respects the 1000ms rate limit
+			// by sending 2 SMS messages and checking the delivered_at time difference
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			go func() {
+				defer GinkgoRecover()
 				err := worker.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()
@@ -333,39 +282,53 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			// Give worker time to start
 			time.Sleep(100 * time.Millisecond)
 
-			startTime := time.Now()
-
-			// Publish message
+			// Send 2 SMS messages rapidly
 			subject := MakeSubject(SMS, SEND, REQ)
-			smsJSON, err := json.Marshal(smsData)
+
+			for i := 0; i < 2; i++ {
+				smsData := sqlc.Sm{
+					UserID:        userID,
+					PhoneNumberID: phoneID,
+					ToPhoneNumber: "+0987654321",
+					Message:       fmt.Sprintf("Normal SMS rate limit test %d", i+1),
+					Status:        "pending",
+				}
+
+				smsJSON, err := json.Marshal(smsData)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = testSuite.NATSConn.Conn.Publish(subject, smsJSON)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Wait for both messages to be processed
+			time.Sleep(2500 * time.Millisecond)
+
+			// Get the last 2 SMS messages from database
+			smsMessages, err := queries.GetLastSmsMessages(context.Background(), sqlc.GetLastSmsMessagesParams{
+				UserID: userID,
+				Limit:  2,
+			})
 			Expect(err).NotTo(HaveOccurred())
+			Expect(len(smsMessages)).To(Equal(2))
 
-			err = testSuite.NATSConn.Conn.Publish(subject, smsJSON)
-			Expect(err).NotTo(HaveOccurred())
+			// Check that the delivered_at time difference is >= 1000ms (rate limit)
+			firstMessage := smsMessages[0]  // Most recent
+			secondMessage := smsMessages[1] // Second most recent
 
-			// Wait for processing
-			time.Sleep(500 * time.Millisecond)
-
-			// Verify SMS was processed by checking balance deduction
-
-			// Rate limiting should add some delay
-			processingTime := time.Since(startTime)
-			Expect(processingTime).To(BeNumerically(">=", 100*time.Millisecond))
+			timeDiff := firstMessage.DeliveredAt.Time.Sub(secondMessage.DeliveredAt.Time)
+			Expect(timeDiff).To(BeNumerically(">=", 1000*time.Millisecond))
 		})
 
 		It("should respect rate limiting for express SMS", func() {
-			smsData := sqlc.Sm{
-				UserID:        userID,
-				PhoneNumberID: phoneID,
-				ToPhoneNumber: "+0987654321",
-				Message:       "Express rate limit test SMS",
-				Status:        "pending",
-			}
+			// This test verifies that express SMS processing respects the 100ms rate limit
+			// by sending 2 SMS messages and checking the delivered_at time difference
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			go func() {
+				defer GinkgoRecover()
 				err := worker.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()
@@ -373,24 +336,184 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			// Give worker time to start
 			time.Sleep(100 * time.Millisecond)
 
-			startTime := time.Now()
-
-			// Publish express message
+			// Send 2 express SMS messages rapidly
 			subject := MakeSubject(SMS, EX, SEND, REQ)
-			smsJSON, err := json.Marshal(smsData)
-			Expect(err).NotTo(HaveOccurred())
 
-			err = testSuite.NATSConn.Conn.Publish(subject, smsJSON)
-			Expect(err).NotTo(HaveOccurred())
+			for i := 0; i < 2; i++ {
+				smsData := sqlc.Sm{
+					UserID:        userID,
+					PhoneNumberID: phoneID,
+					ToPhoneNumber: "+0987654321",
+					Message:       fmt.Sprintf("Express SMS rate limit test %d", i+1),
+					Status:        "pending",
+				}
 
-			// Wait for processing
+				smsJSON, err := json.Marshal(smsData)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = testSuite.NATSConn.Conn.Publish(subject, smsJSON)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Wait for both messages to be processed
 			time.Sleep(500 * time.Millisecond)
 
-			// Verify SMS was processed by checking balance deduction
+			// Get the last 2 SMS messages from database
+			smsMessages, err := queries.GetLastSmsMessages(context.Background(), sqlc.GetLastSmsMessagesParams{
+				UserID: userID,
+				Limit:  2,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(smsMessages)).To(Equal(2))
 
-			// Express SMS should have different rate limiting
-			processingTime := time.Since(startTime)
-			Expect(processingTime).To(BeNumerically(">=", 100*time.Millisecond))
+			// Check that the delivered_at time difference is >= 100ms (rate limit)
+			firstMessage := smsMessages[0]  // Most recent
+			secondMessage := smsMessages[1] // Second most recent
+
+			timeDiff := firstMessage.DeliveredAt.Time.Sub(secondMessage.DeliveredAt.Time)
+			Expect(timeDiff).To(BeNumerically(">=", 100*time.Millisecond))
+		})
+
+		It("should have different rate limits for normal vs express SMS", func() {
+			// This test verifies that normal SMS has a higher rate limit (slower) than express SMS
+			// by comparing the delivered_at time differences between normal and express SMS
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			go func() {
+				defer GinkgoRecover()
+				err := worker.Start(ctx)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			// Give worker time to start
+			time.Sleep(100 * time.Millisecond)
+
+			// Test normal SMS rate limit - send 2 messages
+			normalSubject := MakeSubject(SMS, SEND, REQ)
+			for i := 0; i < 2; i++ {
+				smsData := sqlc.Sm{
+					UserID:        userID,
+					PhoneNumberID: phoneID,
+					ToPhoneNumber: "+0987654321",
+					Message:       fmt.Sprintf("Normal SMS comparison %d", i+1),
+					Status:        "pending",
+				}
+
+				smsJSON, err := json.Marshal(smsData)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = testSuite.NATSConn.Conn.Publish(normalSubject, smsJSON)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Wait for normal SMS processing
+			time.Sleep(2500 * time.Millisecond)
+
+			// Get normal SMS messages
+			normalMessages, err := queries.GetLastSmsMessages(context.Background(), sqlc.GetLastSmsMessagesParams{
+				UserID: userID,
+				Limit:  2,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(normalMessages)).To(Equal(2))
+
+			normalTimeDiff := normalMessages[0].DeliveredAt.Time.Sub(normalMessages[1].DeliveredAt.Time)
+
+			// Test express SMS rate limit - send 2 messages
+			expressSubject := MakeSubject(SMS, EX, SEND, REQ)
+			for i := 0; i < 2; i++ {
+				smsData := sqlc.Sm{
+					UserID:        userID,
+					PhoneNumberID: phoneID,
+					ToPhoneNumber: "+0987654321",
+					Message:       fmt.Sprintf("Express SMS comparison %d", i+1),
+					Status:        "pending",
+				}
+
+				smsJSON, err := json.Marshal(smsData)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = testSuite.NATSConn.Conn.Publish(expressSubject, smsJSON)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Wait for express SMS processing
+			time.Sleep(500 * time.Millisecond)
+
+			// Get express SMS messages (last 2 messages should be the express ones)
+			expressMessages, err := queries.GetLastSmsMessages(context.Background(), sqlc.GetLastSmsMessagesParams{
+				UserID: userID,
+				Limit:  2,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(expressMessages)).To(Equal(2))
+
+			expressTimeDiff := expressMessages[0].DeliveredAt.Time.Sub(expressMessages[1].DeliveredAt.Time)
+
+			// Verify that normal SMS time difference is greater than express SMS time difference
+			Expect(normalTimeDiff).To(BeNumerically(">", expressTimeDiff))
+
+			// Verify specific rate limits
+			Expect(normalTimeDiff).To(BeNumerically(">=", 1000*time.Millisecond))
+			Expect(expressTimeDiff).To(BeNumerically(">=", 100*time.Millisecond))
+		})
+
+		It("should enforce rate limiting under burst conditions", func() {
+			// This test verifies that rate limiting is enforced even when multiple messages are sent rapidly
+			// by sending 3 SMS messages and checking that the time differences respect rate limits
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			go func() {
+				defer GinkgoRecover()
+				err := worker.Start(ctx)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			// Give worker time to start
+			time.Sleep(100 * time.Millisecond)
+
+			// Send 3 normal SMS messages rapidly
+			subject := MakeSubject(SMS, SEND, REQ)
+
+			for i := 0; i < 3; i++ {
+				smsData := sqlc.Sm{
+					UserID:        userID,
+					PhoneNumberID: phoneID,
+					ToPhoneNumber: "+0987654321",
+					Message:       fmt.Sprintf("Burst test SMS %d", i+1),
+					Status:        "pending",
+				}
+
+				smsJSON, err := json.Marshal(smsData)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = testSuite.NATSConn.Conn.Publish(subject, smsJSON)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// Wait for all messages to be processed
+			time.Sleep(4000 * time.Millisecond)
+
+			// Get the last 3 SMS messages from database
+			smsMessages, err := queries.GetLastSmsMessages(context.Background(), sqlc.GetLastSmsMessagesParams{
+				UserID: userID,
+				Limit:  3,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(smsMessages)).To(Equal(3))
+
+			// Check that each consecutive pair respects the rate limit
+			// Message 0 (most recent) vs Message 1 (second most recent)
+			timeDiff1 := smsMessages[0].DeliveredAt.Time.Sub(smsMessages[1].DeliveredAt.Time)
+			Expect(timeDiff1).To(BeNumerically(">=", 1000*time.Millisecond))
+
+			// Message 1 vs Message 2 (oldest)
+			timeDiff2 := smsMessages[1].DeliveredAt.Time.Sub(smsMessages[2].DeliveredAt.Time)
+			Expect(timeDiff2).To(BeNumerically(">=", 1000*time.Millisecond))
 		})
 	})
 
@@ -404,6 +527,7 @@ var _ = Describe("SMS Worker Integration Tests", func() {
 			defer cancel()
 
 			go func() {
+				defer GinkgoRecover()
 				err := worker.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 			}()

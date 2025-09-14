@@ -83,6 +83,7 @@ func NewSms(parent *gin.RouterGroup, db *pgxpool.Pool, nc *nats.Conn) (*Sms, err
 
 	base.RegisterRoutes(func(gp *gin.RouterGroup) {
 		gp.POST("", sms.SendSms)
+		gp.GET("", sms.GetSmsMessages)
 	})
 
 	return sms, nil
@@ -99,7 +100,7 @@ func (s *Sms) SendSms(ctx *gin.Context) {
 		subject = MakeSubject(SMS, SEND, REQ)
 	}
 	ctx.BindQuery(query)
-	
+
 	var req struct {
 		UserID        int32  `json:"user_id" binding:"required"`
 		PhoneNumberID int32  `json:"phone_number_id" binding:"required"`
@@ -125,7 +126,7 @@ func (s *Sms) SendSms(ctx *gin.Context) {
 		ctx.AbortWithError(403, errors.New("not enough balance"))
 		return
 	}
-	
+
 	sms := &sqlc.Sm{
 		UserID:        req.UserID,
 		PhoneNumberID: req.PhoneNumberID,
@@ -133,7 +134,7 @@ func (s *Sms) SendSms(ctx *gin.Context) {
 		Message:       req.Message,
 		Status:        "pending",
 	}
-	
+
 	smsJson, err := json.Marshal(sms)
 	if err != nil {
 		ctx.AbortWithError(500, err)
@@ -147,5 +148,48 @@ func (s *Sms) SendSms(ctx *gin.Context) {
 	}
 	ctx.JSON(200, gin.H{
 		"msg": "OK",
+	})
+}
+
+func (s *Sms) GetSmsMessages(ctx *gin.Context) {
+	var query struct {
+		UserID int32 `form:"user_id" binding:"required"`
+		Limit  int32 `form:"limit"`
+	}
+	
+	err := ctx.BindQuery(&query)
+	if err != nil {
+		ctx.AbortWithError(400, err)
+		return
+	}
+	
+	// Set default limit if not provided
+	if query.Limit <= 0 {
+		query.Limit = 10 // Default to 10 messages
+	}
+	
+	// Set maximum limit to prevent abuse
+	if query.Limit > 100 {
+		query.Limit = 100
+	}
+	
+	q := sqlc.New(s.db)
+	messages, err := q.GetLastSmsMessages(ctx, sqlc.GetLastSmsMessagesParams{
+		UserID: query.UserID,
+		Limit:  query.Limit,
+	})
+	if err != nil {
+		ctx.AbortWithError(500, err)
+		return
+	}
+	
+	// Ensure messages is never nil
+	if messages == nil {
+		messages = []sqlc.Sm{}
+	}
+	
+	ctx.JSON(200, gin.H{
+		"messages": messages,
+		"count":    len(messages),
 	})
 }

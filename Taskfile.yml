@@ -15,16 +15,10 @@ tasks:
   run:
     deps: [sqlc:gen]
     cmds:
-      - task: kc:pf:nats
-      - task: kc:pf:postgres
-      - defer: pkill kubectl
       - go run . api
   run:worker:
     deps: [sqlc:gen]
     cmds:
-      - task: kc:pf:nats
-      - task: kc:pf:postgres
-      - defer: pkill kubectl
       - go run . worker
   mk:start:
     cmds:

@@ -56,4 +56,11 @@ SELECT balance FROM users WHERE id = @user_id;
 -- name: GetPhoneNumberId :one
 SELECT id FROM phone_numbers WHERE user_id = $1 AND phone_number = $2;
 
+-- name: GetLastSmsMessages :many
+SELECT id, user_id, phone_number_id, to_phone_number, message, status, delivered_at
+FROM sms 
+WHERE user_id = $1 
+ORDER BY delivered_at DESC 
+LIMIT $2;
+
 

@@ -30,12 +30,11 @@ var WorkerCmd = &cobra.Command{
 			ForceColors:            true,
 			DisableLevelTruncation: true,
 		})
-		pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable",
+		pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d/postgres?sslmode=disable",
 			viper.GetString("worker.postgres.username"),
 			viper.GetString("worker.postgres.password"),
 			viper.GetString("worker.postgres.address"),
 			viper.GetInt("worker.postgres.port"),
-			viper.GetString("worker.postgres.username"),
 		))
 		if err != nil {
 			return err

@@ -237,4 +237,198 @@ var _ = Describe("SMS Controller Integration Tests", func() {
 			Expect(currentBalance.Int.Int64()).To(Equal(initialBalance.Int.Int64()))
 		})
 	})
+
+	Context("SMS Retrieval", func() {
+		BeforeEach(func() {
+			// Add some test SMS messages to the database
+			err := queries.AddSms(context.Background(), sqlc.AddSmsParams{
+				UserID:        userID,
+				PhoneNumberID: phoneID,
+				ToPhoneNumber: "+1111111111",
+				Message:       "First test message",
+				Status:        "delivered",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			err = queries.AddSms(context.Background(), sqlc.AddSmsParams{
+				UserID:        userID,
+				PhoneNumberID: phoneID,
+				ToPhoneNumber: "+2222222222",
+				Message:       "Second test message",
+				Status:        "pending",
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			err = queries.AddSms(context.Background(), sqlc.AddSmsParams{
+				UserID:        userID,
+				PhoneNumberID: phoneID,
+				ToPhoneNumber: "+3333333333",
+				Message:       "Third test message",
+				Status:        "delivered",
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should retrieve SMS messages for a user", func() {
+			// Create HTTP request
+			req := httptest.NewRequest("GET", "/sms?user_id="+helpers.Int32ToString(userID), nil)
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Perform request
+			router.ServeHTTP(w, req)
+
+			// Assert response
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			// Parse response
+			var response map[string]interface{}
+			err := helpers.ParseJSONResponse(w.Result(), &response)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Check response structure
+			Expect(response).To(HaveKey("messages"))
+			Expect(response).To(HaveKey("count"))
+
+			messages := response["messages"].([]interface{})
+			count := response["count"].(float64)
+
+			Expect(len(messages)).To(Equal(3))
+			Expect(count).To(Equal(float64(3)))
+
+			// Check that messages are ordered by delivered_at DESC (newest first)
+			firstMessage := messages[0].(map[string]interface{})
+			Expect(firstMessage["message"]).To(Equal("Third test message"))
+			Expect(firstMessage["to_phone_number"]).To(Equal("+3333333333"))
+		})
+
+		It("should respect limit parameter", func() {
+			// Create HTTP request with limit
+			req := httptest.NewRequest("GET", "/sms?user_id="+helpers.Int32ToString(userID)+"&limit=2", nil)
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Perform request
+			router.ServeHTTP(w, req)
+
+			// Assert response
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			// Parse response
+			var response map[string]interface{}
+			err := helpers.ParseJSONResponse(w.Result(), &response)
+			Expect(err).NotTo(HaveOccurred())
+
+			messages := response["messages"].([]interface{})
+			count := response["count"].(float64)
+
+			Expect(len(messages)).To(Equal(2))
+			Expect(count).To(Equal(float64(2)))
+		})
+
+		It("should use default limit when not provided", func() {
+			// Create HTTP request without limit
+			req := httptest.NewRequest("GET", "/sms?user_id="+helpers.Int32ToString(userID), nil)
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Perform request
+			router.ServeHTTP(w, req)
+
+			// Assert response
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			// Parse response
+			var response map[string]interface{}
+			err := helpers.ParseJSONResponse(w.Result(), &response)
+			Expect(err).NotTo(HaveOccurred())
+
+			messages := response["messages"].([]interface{})
+			count := response["count"].(float64)
+
+			// Should return all 3 messages (default limit is 10, but we only have 3)
+			Expect(len(messages)).To(Equal(3))
+			Expect(count).To(Equal(float64(3)))
+		})
+
+		It("should enforce maximum limit", func() {
+			// Create HTTP request with limit exceeding maximum
+			req := httptest.NewRequest("GET", "/sms?user_id="+helpers.Int32ToString(userID)+"&limit=200", nil)
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Perform request
+			router.ServeHTTP(w, req)
+
+			// Assert response
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			// Parse response
+			var response map[string]interface{}
+			err := helpers.ParseJSONResponse(w.Result(), &response)
+			Expect(err).NotTo(HaveOccurred())
+
+			messages := response["messages"].([]interface{})
+			count := response["count"].(float64)
+
+			// Should be limited to 100 (max limit)
+			Expect(len(messages)).To(Equal(3)) // We only have 3 messages
+			Expect(count).To(Equal(float64(3)))
+		})
+
+		It("should fail with missing user_id", func() {
+			// Create HTTP request without user_id
+			req := httptest.NewRequest("GET", "/sms", nil)
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Perform request
+			router.ServeHTTP(w, req)
+
+			// Assert response - should fail with bad request
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+
+		It("should return empty list for user with no messages", func() {
+			// Create another user with no messages
+			balance := pgtype.Numeric{}
+			balance.Scan("50.00")
+			err := queries.AddUser(context.Background(), sqlc.AddUserParams{
+				Username: "emptyuser",
+				Balance:  balance,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			emptyUserID, err := queries.GetUserId(context.Background(), "emptyuser")
+			Expect(err).NotTo(HaveOccurred())
+
+			// Create HTTP request for user with no messages
+			req := httptest.NewRequest("GET", "/sms?user_id="+helpers.Int32ToString(emptyUserID), nil)
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Perform request
+			router.ServeHTTP(w, req)
+
+			// Assert response
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			// Parse response
+			var response map[string]interface{}
+			err = helpers.ParseJSONResponse(w.Result(), &response)
+			Expect(err).NotTo(HaveOccurred())
+
+			messages := response["messages"].([]interface{})
+			count := response["count"].(float64)
+
+			Expect(len(messages)).To(Equal(0))
+			Expect(count).To(Equal(float64(0)))
+		})
+	})
 })

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -166,4 +167,9 @@ func JSONBody(data interface{}) io.Reader {
 		panic(err)
 	}
 	return bytes.NewBuffer(jsonData)
+}
+
+// Int32ToString converts an int32 to string
+func Int32ToString(i int32) string {
+	return strconv.FormatInt(int64(i), 10)
 }
