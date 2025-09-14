@@ -32,6 +32,7 @@ The system follows a microservices architecture with two main components:
 - **CLI**: Cobra
 - **Logging**: Logrus
 - **Testing**: Ginkgo/Gomega
+- **Database Driver**: pgx/v5
 
 ## Quick Start
 
@@ -73,17 +74,23 @@ sms/
 │   ├── worker/            # Background worker
 │   └── root.go            # CLI root command
 ├── internal/              # Private application code
-│   ├── controllers/       # HTTP controllers
+│   ├── controllers/       # HTTP controllers (User, PhoneNumber, Sms)
 │   ├── streams/           # NATS stream constants
 │   ├── subjects/          # NATS subject constants
-│   └── workers/           # Background workers
+│   └── workers/           # Background workers (Sms)
 ├── pkg/                   # Public packages
 │   ├── middlewares/       # HTTP middlewares
-│   ├── nats/              # NATS utilities
+│   ├── nats/              # NATS utilities (Publisher, Consumer)
 │   └── utils/             # Common utilities
 ├── sqlc/                  # Generated database code
 ├── charts/                # Kubernetes Helm charts
-└── docs/                  # Documentation
+├── curl/                  # Test data and examples
+├── tests/                 # Integration tests
+├── docs/                  # Documentation
+├── schema.sql             # Database schema
+├── queries.sql            # SQL queries for SQLC
+├── SmsGW.yaml            # Application configuration
+└── main.go                # Application entry point
 ```
 
 ## Contributing

@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-http://localhost:8080
+http://localhost:8081
 ```
 
 ## Authentication
@@ -58,7 +58,7 @@ Send an SMS message to a phone number.
 
 Normal SMS:
 ```bash
-curl -X POST "http://localhost:8080/sms" \
+curl -X POST "http://localhost:8081/sms" \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": 1,
@@ -70,7 +70,7 @@ curl -X POST "http://localhost:8080/sms" \
 
 Express SMS:
 ```bash
-curl -X POST "http://localhost:8080/sms?express=true" \
+curl -X POST "http://localhost:8081/sms?express=true" \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": 1,
@@ -78,6 +78,39 @@ curl -X POST "http://localhost:8080/sms?express=true" \
     "to_phone_number": "+1234567890",
     "message": "Urgent message"
   }'
+```
+
+#### Get SMS Messages
+
+Retrieve SMS messages for a user.
+
+**Endpoint**: `GET /sms`
+
+**Query Parameters**:
+- `user_id` (integer, required): ID of the user
+- `limit` (integer, optional): Number of messages to retrieve (default: 10, max: 100)
+
+**Response**:
+```json
+{
+  "messages": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "phone_number_id": 1,
+      "to_phone_number": "+1234567890",
+      "message": "Hello World",
+      "status": "pending",
+      "delivered_at": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+**Example Request**:
+```bash
+curl -X GET "http://localhost:8081/sms?user_id=1&limit=5"
 ```
 
 ### User Operations
@@ -99,25 +132,23 @@ Create a new user account.
 **Response**:
 ```json
 {
-  "id": 1,
-  "username": "john_doe",
-  "balance": "100.00"
+  "msg": "OK"
 }
 ```
 
-#### Get User Balance
+#### Get User ID
 
-Retrieve the current balance for a user.
+Retrieve the user ID by username.
 
-**Endpoint**: `GET /user/{user_id}/balance`
+**Endpoint**: `GET /user/{username}`
 
 **Path Parameters**:
-- `user_id` (integer): User ID
+- `username` (string): Username
 
 **Response**:
 ```json
 {
-  "balance": "95.00"
+  "id": 1
 }
 ```
 
@@ -125,22 +156,21 @@ Retrieve the current balance for a user.
 
 Add funds to a user's account.
 
-**Endpoint**: `POST /user/{username}/balance`
-
-**Path Parameters**:
-- `username` (string): Username
+**Endpoint**: `PUT /user/balance`
 
 **Request Body**:
 ```json
 {
-  "balance": 50.00
+  "username": "john_doe",
+  "balance": "50.00"
 }
 ```
 
 **Response**:
 ```json
 {
-  "balance": "145.00"
+  "status": 200,
+  "new_balance": "145.00"
 }
 ```
 
@@ -163,10 +193,69 @@ Add a phone number to a user's account.
 **Response**:
 ```json
 {
+  "status": 200,
+  "msg": "OK"
+}
+```
+
+#### Get Phone Number
+
+Retrieve a specific phone number by ID.
+
+**Endpoint**: `GET /phone-number/{id}`
+
+**Path Parameters**:
+- `id` (integer): Phone number ID
+
+**Response**:
+```json
+{
   "id": 1,
   "user_id": 1,
   "phone_number": "+1987654321"
 }
+```
+
+#### Delete Phone Number
+
+Delete a phone number by ID.
+
+**Endpoint**: `DELETE /phone-number/{id}`
+
+**Path Parameters**:
+- `id` (integer): Phone number ID
+
+**Response**:
+```json
+{
+  "status": 200,
+  "msg": "OK"
+}
+```
+
+#### Get Phone Numbers by User
+
+Retrieve all phone numbers for a specific user.
+
+**Endpoint**: `GET /phone-number/user/{username}`
+
+**Path Parameters**:
+- `username` (string): Username
+
+**Response**:
+```json
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "phone_number": "+1987654321"
+  },
+  {
+    "id": 2,
+    "user_id": 1,
+    "phone_number": "+1122334455"
+  }
+]
 ```
 
 ## Error Responses
@@ -244,23 +333,40 @@ The `curl/` directory contains example JSON files for testing:
 
 1. Create a user:
 ```bash
-curl -X POST "http://localhost:8080/user" \
+curl -X POST "http://localhost:8081/user" \
   -H "Content-Type: application/json" \
   -d @curl/new_user.json
 ```
 
 2. Add a phone number:
 ```bash
-curl -X POST "http://localhost:8080/phone-number" \
+curl -X POST "http://localhost:8081/phone-number" \
   -H "Content-Type: application/json" \
   -d @curl/new_phone.json
 ```
 
 3. Send an SMS:
 ```bash
-curl -X POST "http://localhost:8080/sms" \
+curl -X POST "http://localhost:8081/sms" \
   -H "Content-Type: application/json" \
   -d @curl/new_sms.json
+```
+
+4. Get SMS messages:
+```bash
+curl -X GET "http://localhost:8081/sms?user_id=1&limit=10"
+```
+
+5. Get user ID:
+```bash
+curl -X GET "http://localhost:8081/user/john_doe"
+```
+
+6. Add balance:
+```bash
+curl -X PUT "http://localhost:8081/user/balance" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "john_doe", "balance": "50.00"}'
 ```
 
 ## Future Enhancements
