@@ -1,0 +1,24 @@
+CREATE SCHEMA IF NOT EXISTS public;
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    balance DECIMAL(10, 2) DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS phone_numbers (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users (id),
+    phone_number VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS sms (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users (id),
+    phone_number_id INT NOT NULL REFERENCES phone_numbers (id),
+    to_phone_number VARCHAR(255) NOT NULL,
+    message VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL DEFAULT 'pending',
+    delivered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+

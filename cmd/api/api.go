@@ -24,11 +24,12 @@ var ApiCmd = &cobra.Command{
 	Use:   "api",
 	Short: "runs the REST Api server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d/postgres?sslmode=disable",
+		pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable",
 			viper.GetString("api.postgres.username"),
 			viper.GetString("api.postgres.password"),
 			viper.GetString("api.postgres.address"),
 			viper.GetInt("api.postgres.port"),
+			viper.GetString("api.postgres.username"),
 		))
 		if err != nil {
 			return err

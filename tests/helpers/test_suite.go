@@ -58,7 +58,7 @@ func LoadTestConfig() *TestConfig {
 
 	// Create config struct and unmarshal
 	config := &TestConfig{}
-	
+
 	// Load API section (which is what we use for tests)
 	config.Postgres.Address = viper.GetString("api.postgres.address")
 	config.Postgres.Port = viper.GetInt("api.postgres.port")
@@ -145,7 +145,7 @@ func SetupTestSuite() *TestSuite {
 // SetupGinkgoSuite sets up Ginkgo test suite with common configuration
 func SetupGinkgoSuite(t *testing.T, suiteName string) {
 	RegisterFailHandler(ginkgo.Fail)
-	
+
 	// Set up viper configuration
 	viper.SetConfigName("SmsGW")
 	viper.AddConfigPath(".")
@@ -156,16 +156,15 @@ func SetupGinkgoSuite(t *testing.T, suiteName string) {
 	err := viper.ReadInConfig()
 	if err != nil {
 		// If config file doesn't exist, set defaults
-		viper.SetDefault("api.postgres.address", "127.0.0.1")
-		viper.SetDefault("api.postgres.port", 5434)
+		viper.SetDefault("api.postgres.address", "postgres-e2e")
+		viper.SetDefault("api.postgres.port", 5432)
 		viper.SetDefault("api.postgres.username", "root")
 		viper.SetDefault("api.postgres.password", "1234")
-		viper.SetDefault("api.nats.address", "127.0.0.1:4223")
+		viper.SetDefault("api.nats.address", "nats-e2e:4222")
 	}
 
 	ginkgo.RunSpecs(t, suiteName)
 }
-
 
 // runSchemaMigrations runs the database schema
 func runSchemaMigrations(pool *pgxpool.Pool) error {
@@ -236,7 +235,7 @@ func (ts *TestSuite) CleanupNATSStreams(ctx context.Context) {
 			// Stream might not exist, which is fine
 			continue
 		}
-		
+
 		// Purge all messages from the stream
 		err = stream.Purge(ctx)
 		if err != nil {
@@ -245,4 +244,3 @@ func (ts *TestSuite) CleanupNATSStreams(ctx context.Context) {
 		}
 	}
 }
-
