@@ -3,6 +3,7 @@ package workers
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	. "github.com/alireza-karampour/sms/internal/streams"
@@ -128,6 +129,15 @@ func (s *Sms) handler(msg jetstream.Msg) {
 }
 
 func (s *Sms) handleNormalSms(msg jetstream.Msg) {
+	rate := sync.OnceValue(func() uint {
+		return viper.GetUint("sms.normal.ratelimit")
+	})()
+
+	t := sync.OnceValue(func() *time.Timer {
+		return time.NewTimer(time.Millisecond * time.Duration(rate))
+	})()
+	t.Reset(time.Millisecond * time.Duration(rate))
+
 	var sub Subject = Subject(msg.Subject())
 	switch {
 	case sub.Filter(ANY, ANY, REQ):
@@ -190,7 +200,7 @@ func (s *Sms) handleNormalSms(msg jetstream.Msg) {
 			return
 		}
 		tx.Commit(context.Background())
-
+		<-t.C
 	case sub.Filter(ANY, ANY, STAT):
 		logrus.Debugf("NORMAL Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))
 		err := msg.DoubleAck(context.Background())
@@ -203,6 +213,15 @@ func (s *Sms) handleNormalSms(msg jetstream.Msg) {
 }
 
 func (s *Sms) handleExpressSms(msg jetstream.Msg) {
+	rate := sync.OnceValue(func() uint {
+		return viper.GetUint("sms.express.ratelimit")
+	})()
+
+	t := sync.OnceValue(func() *time.Timer {
+		return time.NewTimer(time.Millisecond * time.Duration(rate))
+	})()
+	t.Reset(time.Millisecond * time.Duration(rate))
+
 	var sub Subject = Subject(msg.Subject())
 	switch {
 	case sub.Filter(ANY, ANY, ANY, REQ):
@@ -267,6 +286,7 @@ func (s *Sms) handleExpressSms(msg jetstream.Msg) {
 			return
 		}
 		tx.Commit(context.Background())
+		<-t.C
 
 	case sub.Filter(ANY, ANY, ANY, STAT):
 		logrus.Debugf("EXPRESS Subject: %s -- Msg: %s\n", msg.Subject(), string(msg.Data()))

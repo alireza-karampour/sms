@@ -249,6 +249,10 @@ data:
     
     sms:
       cost: "5.0"
+      normal:
+        ratelimit: 200
+      express:
+        ratelimit: 100
 ```
 
 ### Secrets

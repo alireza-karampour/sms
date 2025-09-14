@@ -61,4 +61,5 @@ var WorkerCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(WorkerCmd)
+	viper.SetDefault("sms.normal.ratelimit", 1000)
 }

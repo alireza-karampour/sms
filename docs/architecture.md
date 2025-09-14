@@ -58,6 +58,7 @@ graph TB
 - Transaction-based database operations
 - Error handling and retry logic
 - Priority-based message processing
+- Configurable rate limiting for both normal and express SMS
 
 ## Message Flow
 
@@ -163,6 +164,7 @@ sequenceDiagram
 ### Performance Optimization
 - **Connection Pooling**: PostgreSQL connection pools
 - **Message Batching**: NATS JetStream batch processing
+- **Rate Limiting**: Configurable rate limits for SMS processing
 - **Caching**: User balance caching (future enhancement)
 
 ## Security Considerations

@@ -81,10 +81,16 @@ worker:
 ```yaml
 sms:
   cost: "5.0"  # Cost per SMS in decimal format
+  normal:
+    ratelimit: 100  # Rate limit for normal SMS in milliseconds
+  express:
+    ratelimit: 50   # Rate limit for express SMS in milliseconds
 ```
 
 **Parameters**:
 - `sms.cost`: Cost per SMS message (decimal string)
+- `sms.normal.ratelimit`: Rate limit for normal SMS messages in milliseconds
+- `sms.express.ratelimit`: Rate limit for express SMS messages in milliseconds
 
 ## Configuration Loading
 
@@ -143,6 +149,8 @@ SMS_WORKER_POSTGRES_USERNAME=root
 SMS_WORKER_POSTGRES_PASSWORD=1234
 
 SMS_SMS_COST=5.0
+SMS_SMS_NORMAL_RATELIMIT=100
+SMS_SMS_EXPRESS_RATELIMIT=50
 ```
 
 ### Environment Variable Naming
@@ -215,6 +223,10 @@ worker:
 
 sms:
   cost: "1.0"
+  normal:
+    ratelimit: 100
+  express:
+    ratelimit: 50
 ```
 
 ### Production Configuration
@@ -241,6 +253,10 @@ worker:
 
 sms:
   cost: "5.0"
+  normal:
+    ratelimit: 200
+  express:
+    ratelimit: 100
 ```
 
 ### Docker Configuration
@@ -267,6 +283,10 @@ worker:
 
 sms:
   cost: "5.0"
+  normal:
+    ratelimit: 150
+  express:
+    ratelimit: 75
 ```
 
 ## Configuration Management

@@ -218,6 +218,28 @@ func (s *Sms) handler(msg jetstream.Msg) {
 }
 ```
 
+### Rate Limiting
+
+Both normal and express SMS handlers implement configurable rate limiting:
+
+```go
+// Normal SMS rate limiting
+rate := sync.OnceValue(func() uint {
+    return viper.GetUint("sms.normal.ratelimit")
+})()
+
+// Express SMS rate limiting  
+rate := sync.OnceValue(func() uint {
+    return viper.GetUint("sms.express.ratelimit")
+})()
+```
+
+**Rate Limiting Features**:
+- **Configurable**: Different rate limits for normal vs express SMS
+- **Efficient**: Uses `sync.OnceValue` for optimal performance
+- **Consistent**: Same pattern for both SMS types
+- **Flexible**: Can be adjusted via configuration
+
 ## Message Acknowledgment
 
 ### Acknowledgment Types

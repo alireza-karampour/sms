@@ -159,6 +159,10 @@ worker:
 
 sms:
   cost: "1.0"
+  normal:
+    ratelimit: 100
+  express:
+    ratelimit: 50
 ```
 
 ### 6. Database Schema
@@ -473,6 +477,8 @@ services:
     environment:
       - SMS_API_POSTGRES_ADDRESS=postgres
       - SMS_API_NATS_ADDRESS=nats:4222
+      - SMS_SMS_NORMAL_RATELIMIT=100
+      - SMS_SMS_EXPRESS_RATELIMIT=50
 
   sms-worker:
     build: .
@@ -483,6 +489,8 @@ services:
     environment:
       - SMS_WORKER_POSTGRES_ADDRESS=postgres
       - SMS_WORKER_NATS_ADDRESS=nats:4222
+      - SMS_SMS_NORMAL_RATELIMIT=100
+      - SMS_SMS_EXPRESS_RATELIMIT=50
 
 volumes:
   postgres_data:
