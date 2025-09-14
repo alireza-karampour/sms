@@ -1,6 +1,6 @@
 # SMS Gateway Testing Guide
 
-This directory contains comprehensive test suites for the SMS Gateway project, including unit tests, integration tests, and end-to-end tests using Ginkgo and Gomega.
+This directory contains comprehensive test suites for the SMS Gateway project, including unit tests and integration tests using Ginkgo and Gomega.
 
 ## Test Structure
 
@@ -9,10 +9,8 @@ tests/
 ├── integration/          # Integration tests
 │   ├── controllers_suite_test.go
 │   ├── user_controller_test.go
-│   └── sms_controller_test.go
-├── e2e/                 # End-to-end tests
-│   ├── e2e_suite_test.go
-│   └── sms_workflow_test.go
+│   ├── sms_controller_test.go
+│   └── sms_worker_test.go
 ├── helpers/             # Test helpers and utilities
 │   ├── test_suite.go
 │   └── http_client.go
@@ -33,15 +31,21 @@ tests/
 - Located in `tests/integration/`
 - Test interactions between components
 - Use real database and NATS connections
-- Test HTTP API endpoints
+- Test HTTP API endpoints and SMS Worker functionality
 - Run with: `go test ./tests/integration/...`
 
-### End-to-End Tests
-- Located in `tests/e2e/`
-- Test complete workflows from API to message queue
-- Verify entire SMS sending process
-- Test error scenarios and edge cases
-- Run with: `go test ./tests/e2e/...`
+#### SMS Controller Integration Tests
+- Test SMS API endpoints
+- Verify NATS message publishing
+- Test balance validation
+- Test error handling scenarios
+
+#### SMS Worker Integration Tests
+- Test NATS message consumption
+- Test database operations (SMS creation, balance deduction)
+- Test rate limiting functionality
+- Test error handling and retry logic
+- Test concurrent message processing
 
 ## Test Dependencies
 
@@ -72,7 +76,6 @@ make -f Makefile.test setup-test-deps
 # Run specific test types
 ./scripts/test-runner.sh unit
 ./scripts/test-runner.sh integration
-./scripts/test-runner.sh e2e
 
 # Run with coverage
 ./scripts/test-runner.sh coverage
@@ -152,29 +155,37 @@ var _ = Describe("User Controller Integration Tests", func() {
 })
 ```
 
-### E2E Test Example
+### SMS Worker Integration Test Example
 
 ```go
-var _ = Describe("SMS Workflow E2E Tests", func() {
+var _ = Describe("SMS Worker Integration Tests", func() {
     var (
         testSuite *helpers.TestSuite
-        client    *helpers.HTTPClient
+        worker    *workers.Sms
+        queries   *sqlc.Queries
     )
 
     BeforeEach(func() {
         testSuite = helpers.SetupTestSuite()
-        client = helpers.NewHTTPClient("http://localhost:8080")
+        queries = sqlc.New(testSuite.DB)
+        
+        // Create SMS worker
+        worker, err = workers.NewSms(context.Background(), 
+            testSuite.NATSConn.Address, testSuite.DB)
+        Expect(err).NotTo(HaveOccurred())
     })
 
-    It("should handle complete SMS workflow", func() {
-        // Create user
-        resp, err := client.Post("/user", helpers.RequestOptions{
-            Body: userData,
-        })
-        Expect(err).NotTo(HaveOccurred())
-        helpers.AssertResponseStatus(resp, http.StatusOK)
-        
-        // Send SMS and verify NATS message
+    It("should process normal SMS request successfully", func() {
+        // Create SMS data
+        smsData := sqlc.Sm{
+            UserID:        userID,
+            PhoneNumberID: phoneID,
+            ToPhoneNumber: "+0987654321",
+            Message:       "Test SMS message",
+            Status:        "pending",
+        }
+
+        // Start worker and publish message
         // ... test implementation
     })
 })

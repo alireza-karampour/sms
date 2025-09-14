@@ -6,8 +6,7 @@ This document provides a comprehensive overview of the testing setup for the SMS
 
 The SMS Gateway now includes a complete testing framework with:
 - **Unit Tests**: Fast, isolated tests for individual components
-- **Integration Tests**: Tests that verify component interactions
-- **End-to-End Tests**: Complete workflow tests from API to message queue
+- **Integration Tests**: Tests that verify component interactions including SMS Worker functionality
 - **Test Infrastructure**: Docker-based test dependencies and automated setup
 
 ## Test Architecture
@@ -18,10 +17,8 @@ tests/
 ├── integration/          # Integration tests
 │   ├── controllers_suite_test.go
 │   ├── user_controller_test.go
-│   └── sms_controller_test.go
-├── e2e/                 # End-to-end tests
-│   ├── e2e_suite_test.go
-│   └── sms_workflow_test.go
+│   ├── sms_controller_test.go
+│   └── sms_worker_test.go
 ├── helpers/             # Test utilities
 │   ├── test_suite.go    # Database and NATS setup
 │   └── http_client.go   # HTTP testing utilities
@@ -51,7 +48,6 @@ tests/
 # Run specific test types
 ./scripts/test-runner.sh unit
 ./scripts/test-runner.sh integration
-./scripts/test-runner.sh e2e
 
 # Run with coverage
 ./scripts/test-runner.sh coverage
@@ -79,17 +75,21 @@ tests/
 - **Examples**:
   - User controller with database
   - SMS controller with NATS
+  - SMS Worker with NATS and database
   - HTTP API endpoints
 
-### End-to-End Tests
-- **Location**: `tests/e2e/`
-- **Purpose**: Test complete workflows
-- **Dependencies**: Full stack
-- **Speed**: Slower
-- **Examples**:
-  - Complete SMS sending workflow
-  - Error handling scenarios
-  - NATS stream verification
+#### SMS Controller Integration Tests
+- Test SMS API endpoints
+- Verify NATS message publishing
+- Test balance validation
+- Test error handling scenarios
+
+#### SMS Worker Integration Tests
+- Test NATS message consumption
+- Test database operations (SMS creation, balance deduction)
+- Test rate limiting functionality
+- Test error handling and retry logic
+- Test concurrent message processing
 
 ## Test Helpers
 
@@ -187,32 +187,37 @@ var _ = Describe("User Controller Integration Tests", func() {
 })
 ```
 
-### E2E Test Example
+### SMS Worker Integration Test Example
 ```go
-var _ = Describe("SMS Workflow E2E Tests", func() {
+var _ = Describe("SMS Worker Integration Tests", func() {
     var (
         testSuite *helpers.TestSuite
-        client    *helpers.HTTPClient
+        worker    *workers.Sms
+        queries   *sqlc.Queries
     )
 
     BeforeEach(func() {
         testSuite = helpers.SetupTestSuite()
-        client = helpers.NewHTTPClient("http://localhost:8080")
+        queries = sqlc.New(testSuite.DB)
+        
+        // Create SMS worker
+        worker, err = workers.NewSms(context.Background(), 
+            testSuite.NATSConn.Address, testSuite.DB)
+        Expect(err).NotTo(HaveOccurred())
     })
 
-    It("should handle complete SMS workflow", func() {
-        // Create user
-        resp, err := client.Post("/user", helpers.RequestOptions{
-            Body: helpers.UserData{
-                Username: "e2euser",
-                Balance:  100.0,
-            },
-        })
-        Expect(err).NotTo(HaveOccurred())
-        helpers.AssertResponseStatus(resp, http.StatusOK)
-        
-        // Send SMS and verify NATS message
-        // ... complete workflow test
+    It("should process normal SMS request successfully", func() {
+        // Create SMS data
+        smsData := sqlc.Sm{
+            UserID:        userID,
+            PhoneNumberID: phoneID,
+            ToPhoneNumber: "+0987654321",
+            Message:       "Test SMS message",
+            Status:        "pending",
+        }
+
+        // Start worker and publish message
+        // Verify SMS was added to database and balance deducted
     })
 })
 ```
@@ -269,7 +274,6 @@ jobs:
 Commands:
   unit         Run unit tests only
   integration  Run integration tests only
-  e2e          Run end-to-end tests only
   all          Run all tests
   coverage     Run tests with coverage report
   setup        Setup test dependencies
@@ -286,7 +290,6 @@ Targets:
   teardown-test-deps Stop test dependencies
   test-unit          Run unit tests
   test-integration   Run integration tests
-  test-e2e           Run end-to-end tests
   test-all           Run all tests
   test-coverage      Run tests with coverage
   clean-test         Clean test artifacts
@@ -355,11 +358,13 @@ When adding new tests:
 The test suite covers:
 - ✅ User management (creation, retrieval, balance)
 - ✅ SMS sending (normal and express)
+- ✅ SMS Worker message processing
 - ✅ Database operations
-- ✅ NATS message publishing
+- ✅ NATS message publishing and consumption
 - ✅ HTTP API endpoints
 - ✅ Error handling scenarios
-- ✅ Complete SMS workflows
+- ✅ Rate limiting functionality
+- ✅ Concurrent message processing
 
 ## Future Enhancements
 

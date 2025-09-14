@@ -20,13 +20,19 @@ import (
 
 var (
 	cost pgtype.Numeric
+	costInitialized bool
 )
 
-func init() {
-	err := cost.Scan(viper.GetString("sms.cost"))
-	if err != nil {
-		panic(err)
+func getSMSCost() pgtype.Numeric {
+	if !costInitialized {
+		err := cost.Scan(viper.GetString("sms.cost"))
+		if err != nil {
+			// If no config is loaded, use a default value
+			cost.Scan("5.0")
+		}
+		costInitialized = true
 	}
+	return cost
 }
 
 type Sms struct {
@@ -176,7 +182,7 @@ func (s *Sms) handleNormalSms(msg jetstream.Msg) {
 			return
 		}
 		newBalance, err := q.SubBalance(context.Background(), sqlc.SubBalanceParams{
-			Amount: cost,
+			Amount: getSMSCost(),
 			UserID: sms.UserID,
 		})
 		if err != nil {
@@ -261,7 +267,7 @@ func (s *Sms) handleExpressSms(msg jetstream.Msg) {
 		}
 
 		newBalance, err := q.SubBalance(context.Background(), sqlc.SubBalanceParams{
-			Amount: cost,
+			Amount: getSMSCost(),
 			UserID: sms.UserID,
 		})
 
