@@ -1,0 +1,100 @@
+# Test Makefile for SMS Gateway
+
+.PHONY: help test test-unit test-integration test-e2e test-all setup-test-deps teardown-test-deps clean-test
+
+# Default target
+help:
+	@echo "Available targets:"
+	@echo "  setup-test-deps    - Start test dependencies (PostgreSQL, NATS)"
+	@echo "  teardown-test-deps - Stop test dependencies"
+	@echo "  test-unit          - Run unit tests"
+	@echo "  test-integration   - Run integration tests"
+	@echo "  test-e2e           - Run end-to-end tests"
+	@echo "  test-all           - Run all tests"
+	@echo "  clean-test         - Clean test artifacts"
+
+# Test environment variables (only GIN_MODE is needed now)
+export GIN_MODE=test
+
+# Setup test dependencies
+setup-test-deps:
+	@echo "Starting test dependencies..."
+	docker compose -f docker-compose.test.yml up -d
+	@echo "Waiting for services to be ready..."
+	@timeout 60 bash -c 'until docker compose -f docker-compose.test.yml exec postgres-test pg_isready -U root; do sleep 1; done'
+	@timeout 60 bash -c 'until curl -f http://localhost:8223/varz >/dev/null 2>&1; do sleep 1; done'
+	@echo "Test dependencies are ready!"
+
+# Teardown test dependencies
+teardown-test-deps:
+	@echo "Stopping test dependencies..."
+	docker compose -f docker-compose.test.yml down -v
+	@echo "Test dependencies stopped!"
+
+# Run unit tests
+test-unit:
+	@echo "Running unit tests..."
+	go test -v ./pkg/... -race
+
+# Run integration tests
+test-integration: setup-test-deps
+	@echo "Running integration tests..."
+	go test -v ./tests/integration/... -race
+	@$(MAKE) teardown-test-deps
+
+# Run end-to-end tests
+test-e2e: setup-test-deps
+	@echo "Running end-to-end tests..."
+	go test -v ./tests/e2e/... -race
+	@$(MAKE) teardown-test-deps
+
+# Run all tests
+test-all: setup-test-deps
+	@echo "Running all tests..."
+	go test -v ./... -race
+	@$(MAKE) teardown-test-deps
+
+# Clean test artifacts
+clean-test:
+	@echo "Cleaning test artifacts..."
+	docker compose -f docker-compose.test.yml down -v --remove-orphans
+	docker volume prune -f
+	@echo "Test artifacts cleaned!"
+
+# Test with coverage
+test-coverage: setup-test-deps
+	@echo "Running tests with coverage..."
+	go test -v ./... -race -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+	@$(MAKE) teardown-test-deps
+
+# Test specific package
+test-package: setup-test-deps
+	@echo "Running tests for package: $(PACKAGE)"
+	go test -v ./$(PACKAGE) -race
+	@$(MAKE) teardown-test-deps
+
+# Benchmark tests
+test-benchmark: setup-test-deps
+	@echo "Running benchmark tests..."
+	go test -bench=. -benchmem ./...
+	@$(MAKE) teardown-test-deps
+
+# Test with verbose output
+test-verbose: setup-test-deps
+	@echo "Running tests with verbose output..."
+	go test -v -race ./tests/...
+	@$(MAKE) teardown-test-deps
+
+# Test with race detection
+test-race: setup-test-deps
+	@echo "Running tests with race detection..."
+	go test -race ./tests/...
+	@$(MAKE) teardown-test-deps
+
+# Test with timeout
+test-timeout: setup-test-deps
+	@echo "Running tests with timeout..."
+	go test -timeout=30s ./tests/...
+	@$(MAKE) teardown-test-deps

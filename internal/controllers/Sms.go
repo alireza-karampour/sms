@@ -24,7 +24,11 @@ var (
 )
 
 func init() {
-	err := cost.Scan(viper.GetString("sms.cost"))
+	costStr := viper.GetString("sms.cost")
+	if costStr == "" {
+		costStr = "5.0" // Default cost
+	}
+	err := cost.Scan(costStr)
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +98,6 @@ func (s *Sms) SendSms(ctx *gin.Context) {
 	} else {
 		subject = MakeSubject(SMS, SEND, REQ)
 	}
-
 	ctx.BindQuery(query)
 	sms := new(sqlc.Sm)
 	err := ctx.BindJSON(sms)
@@ -102,6 +105,7 @@ func (s *Sms) SendSms(ctx *gin.Context) {
 		ctx.AbortWithError(400, err)
 		return
 	}
+
 	q := sqlc.New(s.db)
 	balance, err := q.GetBalance(ctx, sms.UserID)
 	if err != nil {

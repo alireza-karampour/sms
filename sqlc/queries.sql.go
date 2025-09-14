@@ -23,7 +23,7 @@ RETURNING
 
 type AddBalanceParams struct {
 	Balance  pgtype.Numeric `db:"balance" json:"balance"`
-	Username string         `db:"username" json:"username"`
+	Username string         `binding:"required,alphanum" db:"username" json:"username"`
 }
 
 func (q *Queries) AddBalance(ctx context.Context, arg AddBalanceParams) (pgtype.Numeric, error) {
@@ -64,7 +64,7 @@ VALUES (
 `
 
 type AddPhoneNumberByUsernameParams struct {
-	Username    string `db:"username" json:"username"`
+	Username    string `binding:"required,alphanum" db:"username" json:"username"`
 	PhoneNumber string `db:"phone_number" json:"phone_number"`
 }
 
@@ -101,7 +101,7 @@ INSERT INTO users (username, balance) VALUES ($1, $2)
 `
 
 type AddUserParams struct {
-	Username string         `db:"username" json:"username"`
+	Username string         `binding:"required,alphanum" db:"username" json:"username"`
 	Balance  pgtype.Numeric `db:"balance" json:"balance"`
 }
 
@@ -140,6 +140,22 @@ func (q *Queries) GetPhoneNumber(ctx context.Context, id int32) (PhoneNumber, er
 	var i PhoneNumber
 	err := row.Scan(&i.ID, &i.UserID, &i.PhoneNumber)
 	return i, err
+}
+
+const getPhoneNumberId = `-- name: GetPhoneNumberId :one
+SELECT id FROM phone_numbers WHERE user_id = $1 AND phone_number = $2
+`
+
+type GetPhoneNumberIdParams struct {
+	UserID      int32  `db:"user_id" json:"user_id"`
+	PhoneNumber string `db:"phone_number" json:"phone_number"`
+}
+
+func (q *Queries) GetPhoneNumberId(ctx context.Context, arg GetPhoneNumberIdParams) (int32, error) {
+	row := q.db.QueryRow(ctx, getPhoneNumberId, arg.UserID, arg.PhoneNumber)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getPhoneNumbersByUsername = `-- name: GetPhoneNumbersByUsername :many

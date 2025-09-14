@@ -26,6 +26,6 @@ type Sm struct {
 
 type User struct {
 	ID       int32          `db:"id" json:"id"`
-	Username string         `db:"username" json:"username"`
+	Username string         `binding:"required,alphanum" db:"username" json:"username"`
 	Balance  pgtype.Numeric `db:"balance" json:"balance"`
 }

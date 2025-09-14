@@ -53,4 +53,7 @@ UPDATE users SET balance = balance - @amount WHERE id = @user_id RETURNING balan
 -- name: GetBalance :one
 SELECT balance FROM users WHERE id = @user_id;
 
+-- name: GetPhoneNumberId :one
+SELECT id FROM phone_numbers WHERE user_id = $1 AND phone_number = $2;
+
 

@@ -12,13 +12,11 @@ tasks:
     cmds:
       - curl -X POST -L --stderr /dev/null --json '{{.NEW_USER}}' {{.ADDRESS}}/user | jq
   user:addBalance:
+    vars:
+      USER:
+        sh: cat ./new_user.json
     cmds:
-      - curl -X PUT -L --stderr /dev/null --json '
-        {
-        "username":"{{.USERNAME}}",
-        "balance":{{.BALANCE}}
-        }' {{.ADDRESS}}/user/balance | jq
-
+      - curl -X PUT -L --stderr /dev/null --json '{{.USER}}' {{.ADDRESS}}/user/balance | jq
   phone:create:
     vars:
       USER_ID:

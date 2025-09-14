@@ -1,0 +1,23 @@
+api:
+  nats:
+    address: "127.0.0.1:4223"
+  listen: "127.0.0.1:8081"
+  postgres:
+    address: "127.0.0.1"
+    port: 5434
+    username: root
+    password: 1234
+worker:
+  nats:
+    address: "127.0.0.1:4223"
+  postgres:
+    address: "127.0.0.1"
+    port: 5434
+    username: root
+    password: 1234
+sms:
+  normal:
+    ratelimit: 1000
+  express:
+    ratelimit: 100
+  cost: "5.0"

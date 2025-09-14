@@ -1,6 +1,10 @@
 package middlewares
 
-import "github.com/gin-gonic/gin"
+import (
+	"slices"
+
+	"github.com/gin-gonic/gin"
+)
 
 func WriteErrorBody(ctx *gin.Context) {
 	ctx.Next()
@@ -10,6 +14,9 @@ func WriteErrorBody(ctx *gin.Context) {
 			"errors": make([]string, 0, len(ctx.Errors)),
 		}
 		for _, v := range ctx.Errors {
+			if slices.Contains(res["errors"].([]string), v.Error()) {
+				continue
+			}
 			res["errors"] = append(res["errors"].([]string), v.Error())
 		}
 		ctx.JSON(ctx.Writer.Status(), res)

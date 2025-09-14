@@ -13,12 +13,14 @@ tasks:
     cmds:
       - go build -o bin/sms .
   run:
+    deps: [sqlc:gen]
     cmds:
       - task: kc:pf:nats
       - task: kc:pf:postgres
       - defer: pkill kubectl
       - go run . api
   run:worker:
+    deps: [sqlc:gen]
     cmds:
       - task: kc:pf:nats
       - task: kc:pf:postgres
