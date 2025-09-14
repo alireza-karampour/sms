@@ -99,23 +99,41 @@ func (s *Sms) SendSms(ctx *gin.Context) {
 		subject = MakeSubject(SMS, SEND, REQ)
 	}
 	ctx.BindQuery(query)
-	sms := new(sqlc.Sm)
-	err := ctx.BindJSON(sms)
+	
+	var req struct {
+		UserID        int32  `json:"user_id" binding:"required"`
+		PhoneNumberID int32  `json:"phone_number_id" binding:"required"`
+		ToPhoneNumber string `json:"to_phone_number" binding:"required"`
+		Message       string `json:"message" binding:"required"`
+	}
+	err := ctx.BindJSON(&req)
 	if err != nil {
 		ctx.AbortWithError(400, err)
 		return
 	}
 
 	q := sqlc.New(s.db)
-	balance, err := q.GetBalance(ctx, sms.UserID)
+	balance, err := q.GetBalance(ctx, req.UserID)
 	if err != nil {
 		ctx.AbortWithError(500, err)
 		return
 	}
-	if balance.Int.Cmp(cost.Int) < 0 {
+	// Compare the actual decimal values, not just the integer parts
+	balanceFloat, _ := balance.Float64Value()
+	costFloat, _ := cost.Float64Value()
+	if balanceFloat.Float64 < costFloat.Float64 {
 		ctx.AbortWithError(403, errors.New("not enough balance"))
 		return
 	}
+	
+	sms := &sqlc.Sm{
+		UserID:        req.UserID,
+		PhoneNumberID: req.PhoneNumberID,
+		ToPhoneNumber: req.ToPhoneNumber,
+		Message:       req.Message,
+		Status:        "pending",
+	}
+	
 	smsJson, err := json.Marshal(sms)
 	if err != nil {
 		ctx.AbortWithError(500, err)

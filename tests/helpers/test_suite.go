@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alireza-karampour/sms/internal/streams"
 	"github.com/alireza-karampour/sms/pkg/nats"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/onsi/ginkgo/v2"
@@ -198,11 +199,11 @@ func runSchemaMigrations(pool *pgxpool.Pool) error {
 	return err
 }
 
-// CleanupTestData cleans up test data from database
+// CleanupTestData cleans up test data from database and NATS streams
 func (ts *TestSuite) CleanupTestData() {
 	ctx := context.Background()
 
-	// Clean up in reverse order of dependencies
+	// Clean up database in reverse order of dependencies
 	ts.DB.Exec(ctx, "DELETE FROM sms")
 	ts.DB.Exec(ctx, "DELETE FROM phone_numbers")
 	ts.DB.Exec(ctx, "DELETE FROM users")
@@ -211,5 +212,37 @@ func (ts *TestSuite) CleanupTestData() {
 	ts.DB.Exec(ctx, "ALTER SEQUENCE users_id_seq RESTART WITH 1")
 	ts.DB.Exec(ctx, "ALTER SEQUENCE phone_numbers_id_seq RESTART WITH 1")
 	ts.DB.Exec(ctx, "ALTER SEQUENCE sms_id_seq RESTART WITH 1")
+
+	// Clean up NATS streams
+	ts.CleanupNATSStreams(ctx)
+}
+
+// CleanupNATSStreams removes all messages from NATS streams
+func (ts *TestSuite) CleanupNATSStreams(ctx context.Context) {
+	if ts.NATSConn == nil || ts.NATSConn.JetStream == nil {
+		return
+	}
+
+	// List all streams and purge them
+	streamNames := []string{
+		streams.NORMAL_SMS_CONSUMER_NAME,
+		streams.EXPRESS_SMS_CONSUMER_NAME,
+	}
+
+	for _, streamName := range streamNames {
+		// Get the stream interface
+		stream, err := ts.NATSConn.JetStream.Stream(ctx, streamName)
+		if err != nil {
+			// Stream might not exist, which is fine
+			continue
+		}
+		
+		// Purge all messages from the stream
+		err = stream.Purge(ctx)
+		if err != nil {
+			// Log error but don't fail the test
+			continue
+		}
+	}
 }
 

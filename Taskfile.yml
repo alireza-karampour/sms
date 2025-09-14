@@ -47,3 +47,7 @@ tasks:
   sqlc:gen:
     cmds:
       - sqlc generate
+  docker:build:
+    cmds:
+      - go build -o ./bin/sms .
+      - docker buildx build -t reffined/sms:v1 .

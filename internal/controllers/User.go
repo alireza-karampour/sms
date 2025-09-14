@@ -7,6 +7,7 @@ import (
 	"github.com/alireza-karampour/sms/pkg/middlewares"
 	"github.com/alireza-karampour/sms/sqlc"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -36,15 +37,26 @@ func NewUser(parent *gin.RouterGroup, db *pgxpool.Pool) *User {
 }
 
 func (u *User) CreateNewUser(ctx *gin.Context) {
-	user := new(sqlc.User)
-	err := ctx.BindJSON(user)
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Balance  string `json:"balance" binding:"required"`
+	}
+	err := ctx.BindJSON(&req)
 	if err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
+	
+	balance := pgtype.Numeric{}
+	err = balance.Scan(req.Balance)
+	if err != nil {
+		ctx.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	
 	err = u.db.AddUser(ctx, sqlc.AddUserParams{
-		Username: user.Username,
-		Balance:  user.Balance,
+		Username: req.Username,
+		Balance:  balance,
 	})
 	if err != nil {
 		ctx.AbortWithError(500, err)
@@ -58,25 +70,36 @@ func (u *User) CreateNewUser(ctx *gin.Context) {
 }
 
 func (u *User) AddBalance(ctx *gin.Context) {
-	user := new(sqlc.User)
-	err := ctx.BindJSON(user)
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Balance  string `json:"balance" binding:"required"`
+	}
+	err := ctx.BindJSON(&req)
+	if err != nil {
+		ctx.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	
+	balance := pgtype.Numeric{}
+	err = balance.Scan(req.Balance)
 	if err != nil {
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
 	newBalance, err := u.db.AddBalance(ctx, sqlc.AddBalanceParams{
-		Balance:  user.Balance,
-		Username: user.Username,
+		Balance:  balance,
+		Username: req.Username,
 	})
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
+	balanceStr, _ := newBalance.MarshalJSON()
 	ctx.JSON(200, map[string]any{
 		"status":      200,
-		"new_balance": newBalance,
+		"new_balance": string(balanceStr),
 	})
 	return
 }

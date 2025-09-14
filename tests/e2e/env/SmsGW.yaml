@@ -1,0 +1,24 @@
+api:
+  nats:
+    address: "nats-e2e:4222"
+  listen: "0.0.0.0:8080"
+  postgres:
+    address: "postgres-e2e"
+    port: 5432
+    username: root
+    password: 1234
+worker:
+  nats:
+    address: "nats-e2e:4222"
+  postgres:
+    address: "postgres-e2e"
+    port: 5432
+    username: root
+    password: 1234
+sms:
+  normal:
+    ratelimit: 1000
+  express:
+    ratelimit: 100
+  cost: "5.0"
+

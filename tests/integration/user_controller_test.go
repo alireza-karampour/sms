@@ -133,7 +133,7 @@ var _ = Describe("User Controller Integration Tests", func() {
 			// Verify balance was updated (100.00 + 50.00 = 150.00)
 			expectedBalance := pgtype.Numeric{}
 			expectedBalance.Scan("150.00")
-			Expect(newBalance.Int.Int64).To(Equal(expectedBalance.Int.Int64))
+			Expect(newBalance.Int.Int64()).To(Equal(expectedBalance.Int.Int64()))
 		})
 	})
 

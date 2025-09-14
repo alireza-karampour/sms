@@ -1,6 +1,6 @@
 services:
   postgres-test:
-    image: postgres:15-alpine
+    image: postgres:16
     container_name: sms-postgres-test
     environment:
       POSTGRES_USER: root
@@ -23,4 +23,3 @@ services:
 volumes:
   postgres_test_data:
   nats_test_data:
-

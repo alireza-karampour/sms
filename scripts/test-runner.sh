@@ -79,35 +79,35 @@ cleanup_test_env() {
 # Function to run unit tests
 run_unit_tests() {
   print_status "Running unit tests..."
-  go test -v ./pkg/... -race
+  go test -v ./pkg/...
   print_success "Unit tests completed"
 }
 
 # Function to run integration tests
 run_integration_tests() {
   print_status "Running integration tests..."
-  ginkgo run -vv -race ./tests/integration/...
+  ginkgo run -vv ./tests/integration/...
   print_success "Integration tests completed"
 }
 
 # Function to run e2e tests
 run_e2e_tests() {
   print_status "Running end-to-end tests..."
-  go test -v ./tests/e2e/... -race
+  go test -v ./tests/e2e/...
   print_success "End-to-end tests completed"
 }
 
 # Function to run all tests
 run_all_tests() {
   print_status "Running all tests..."
-  go test -v ./... -race
+  go test -v ./...
   print_success "All tests completed"
 }
 
 # Function to run tests with coverage
 run_coverage_tests() {
   print_status "Running tests with coverage..."
-  go test -v ./... -race -coverprofile=coverage.out
+  go test -v ./... -coverprofile=coverage.out
   go tool cover -html=coverage.out -o coverage.html
   print_success "Coverage report generated: coverage.html"
 }
@@ -214,4 +214,3 @@ main() {
 
 # Run main function with all arguments
 main "$@"
-

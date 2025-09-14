@@ -24,7 +24,7 @@ var ApiCmd = &cobra.Command{
 	Use:   "api",
 	Short: "runs the REST Api server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d",
+		pool, err := pgxpool.New(context.Background(), fmt.Sprintf("postgresql://%s:%s@%s:%d/postgres?sslmode=disable",
 			viper.GetString("api.postgres.username"),
 			viper.GetString("api.postgres.password"),
 			viper.GetString("api.postgres.address"),
@@ -44,6 +44,15 @@ var ApiCmd = &cobra.Command{
 		}
 
 		r := gin.Default()
+
+		// Add health check endpoint
+		r.GET("/health", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"status":  "healthy",
+				"service": "sms-api",
+			})
+		})
+
 		root := r.Group("/")
 		UserController = controllers.NewUser(root, pool)
 		PhoneNumberController = controllers.NewPhoneNumber(root, pool)

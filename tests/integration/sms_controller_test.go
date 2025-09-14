@@ -234,7 +234,7 @@ var _ = Describe("SMS Controller Integration Tests", func() {
 			// The actual balance deduction would happen in the worker
 			currentBalance, err := queries.GetBalance(context.Background(), userID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(currentBalance.Int.Int64).To(Equal(initialBalance.Int.Int64))
+			Expect(currentBalance.Int.Int64()).To(Equal(initialBalance.Int.Int64()))
 		})
 	})
 })
