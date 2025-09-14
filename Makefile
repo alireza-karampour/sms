@@ -36,7 +36,7 @@ run-worker: build
 # Run E2E tests with automatic infrastructure setup
 run-e2e-tests:
 	@echo "Running E2E tests with dockerized services..."
-	./scripts/run-e2e-tests.sh
+	./scripts/test-runner.sh e2e
 
 # Clean build artifacts
 clean:

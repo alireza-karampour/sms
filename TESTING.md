@@ -39,10 +39,7 @@ tests/
 
 ### 1. Setup Test Environment
 ```bash
-# Complete setup (recommended)
-./scripts/setup-test-env.sh
-
-# Or manual setup
+# Setup test environment and dependencies
 ./scripts/test-runner.sh setup
 ```
 
@@ -250,7 +247,7 @@ jobs:
           go-version: '1.21'
       
       - name: Setup test environment
-        run: ./scripts/setup-test-env.sh
+        run: ./scripts/test-runner.sh setup
       
       - name: Run tests
         run: ./scripts/test-runner.sh all

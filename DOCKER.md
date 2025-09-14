@@ -22,7 +22,7 @@ Both services are dockerized and can be run together with their dependencies (Po
 - `docker-compose.test.yml`: Development testing setup (existing)
 
 ### Scripts
-- `scripts/run-e2e-tests.sh`: Automated E2E test runner with infrastructure setup
+- `scripts/test-runner.sh`: Unified test runner supporting unit, integration, and E2E tests
 
 ### Configuration
 - `Makefile`: Convenient commands for building and running services

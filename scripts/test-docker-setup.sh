@@ -48,7 +48,7 @@ required_files=(
     "docker-compose.yml"
     "docker-compose.e2e.yml"
     "Makefile"
-    "scripts/run-e2e-tests.sh"
+    "scripts/test-runner.sh"
 )
 
 for file in "${required_files[@]}"; do
@@ -81,12 +81,12 @@ fi
 print_status "Testing Makefile targets..."
 make help > /dev/null 2>&1 && print_success "Makefile is valid"
 
-# Test E2E script syntax
-print_status "Testing E2E script syntax..."
-if bash -n scripts/run-e2e-tests.sh; then
-    print_success "E2E script syntax is valid"
+# Test test-runner script syntax
+print_status "Testing test-runner script syntax..."
+if bash -n scripts/test-runner.sh; then
+    print_success "Test-runner script syntax is valid"
 else
-    print_error "E2E script syntax is invalid"
+    print_error "Test-runner script syntax is invalid"
     exit 1
 fi
 
